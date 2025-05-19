@@ -6,13 +6,19 @@
 #include <type_traits>
 
 
+template<typename T>
+class ActivationFunc {
+    static_assert(std::is_arithmetic<T>::value, "ActivationFunc only takes numeric values");
+private
+};
+
 
 template<typename T>
 class Tensor {
     static_assert(std::is_arithmetic<T>::value, "Tensor only takes numeric values");
 
 private:
-    std::vector<T> tensor;
+    T *tensor;
     std::vector<unsigned int> dimensions;
 
 public:
@@ -30,30 +36,44 @@ public:
         this->dimensions = dimensions;
 
         // Set the size for the tensor
-        unsigned int total_entries = 1;
+        size_t total_entries = 1;
         for (unsigned int dim : dimensions){
             if (dim == 0){
                 throw std::runtime_error("Dimension of a tensor cannot be 0");
             }
             total_entries *= dim;
         }
-        this->tensor.resize(total_entries);
+        this->tensor = new T[total_entries];
+    }
+    
+    void randomlyInit(){
+        // Get the entire flattened size.
+        size_t total_entries = 1;
+        for (unsigned int dim : dimensions){
+            if (dim == 0){
+                throw std::runtime_error("Dimension of a tensor cannot be 0");
+            }
+            total_entries *= dim;
+        }
         
         // Randomly assign the entries.
         std::random_device rd;  
         std::mt19937 gen(rd()); 
-        std::uniform_real_distribution<float> dist(-100, 100);
-        for (size_t i = 0; i < this->tensor.size(); i++){
+        std::uniform_real_distribution<T> dist(-100, 100);
+        for (size_t i = 0; i < total_entries; i++){
             this->tensor[i] = dist(gen);
         }
-        for (T entry : this->tensor){
-            std::cout << entry << ", ";
-        }
-        std::cout << std::endl;
     }
 
+    // Must free the allocated memory for the tensor.
+    ~Tensor(){
+        delete[] this->tensor;
+    }
+
+    // entry is vector indicating the position of the entry in the tensor user want to get
+    // The order of value in entry is from the least to most significant dimension.
     T getEntry(std::vector<unsigned int> entry){
-        if (entry.size() > this->tensor.size()){
+        if (entry.size() > this->dimensions.size()){
             throw std::runtime_error("The entry has more dimensions than the matrix");
         }
 
@@ -74,20 +94,41 @@ public:
 
         return this->tensor[index];
     }
-    
+
+    // Get the entire tensor in a form of a 1D array
+    // This can be dangerous, but necessary for saving memory.
+    T *getTensor(){
+        return this->tensor;
+    }
+
+    // Get the size of the tensor
+    std::vector<unsigned int> getDim(){
+        return this->dimensions;
+    }
 };
 
-
-class Layer : public Tensor<float>{
+template<typename T>
+class Layer : public Tensor<T>{
 private:
     
 public:
-
     // Construct by size, randomly assign values
-    Layer(unsigned int size) : Tensor<float>({1, size}){}
+    Layer(unsigned int size) : Tensor<T>({1, size}){}
 
-    
+    // Compute the value for this layer's nodes based on the previous layer and weights
+    // Technically, it's a product of a vector and a matrix
+    void compute(Layer<T> prev, Tensor<T> weights){
+        std::vector<unsigned int> dim = weights.getDim();
+        if (prev.getDim()[1] != dim[0] || dim[1] != this->getDim()[1]){
+            throw std::runtime_error("weights and previous layer do not have appropriate size to make a product\n");    
+        }
+        
+        T *thisLayer = this->getTensor();
+        
+    }
 };
+
+
 
 
 
