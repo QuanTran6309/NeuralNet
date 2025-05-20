@@ -6,10 +6,9 @@
 #include <type_traits>
 
 
-template<typename T>
-class ActivationFunc {
-    static_assert(std::is_arithmetic<T>::value, "ActivationFunc only takes numeric values");
-private
+struct Range {
+    int start; // inlcusive
+    int end;   // exclusive
 };
 
 
@@ -95,6 +94,66 @@ public:
         return this->tensor[index];
     }
 
+    // Get just a portion of a tensor,
+    // Tensor slicing
+    Tensor<T> getTensor(std::vector<Range> bounds){
+
+        // Later add more condition here in case bounds is out of bound
+
+        // Calculate the total number of entries, dimensions, and bounds for a new tensor
+        unsigned int total_entries = 1;
+        unsigned int prevSize = 1;
+        std::vector<unsigned int> newDim;
+        std::vector<unsigned int> indices; // Determine at which location on the current tensor to be copied to the new tensor
+        for (unsigned int i = 0; i < bounds.size(); i++){
+            unsigned int range = bounds[i].end - bounds[i].start;
+            total_entries *= range;
+            newDim.push_back(range);
+
+            // Form the index for later getting and assigning new tensor value
+            std::vector<unsigned int> index;
+            for (unsigned int j = bounds[i].start; j < bounds[i].end; j++){
+                index.push_back(j * prevSize);
+            }
+            if (indices.size() == 0){
+                indices = index;
+            }
+            else {
+                std::vector<unsigned int> buffer;
+                for (unsigned int idx : index){
+                    for (unsigned int idc : indices){
+                        buffer.push_back(idx + idc);
+                    }
+                }
+                indices = buffer;
+            }
+            prevSize *= this->dimensions[i];
+        }
+
+        // Create and get new tensor
+        Tensor<T> newTensor(newDim);
+        T *newTensor_ptr = newTensor.getTensor();
+
+        std::cout << "Printing the indices" << std::endl;
+        for (int i = 0; i < indices.size(); i++){
+            std::cout << indices[i] << "=>" << this->tensor[indices[i]] << std::endl;
+        }
+        
+
+        // Copy value to new tensor.
+        unsigned int itr = 0;
+        while (itr < total_entries){
+            newTensor_ptr[itr] = this->tensor[indices[itr]];
+            itr++;
+        }
+        return newTensor;
+    }
+
+    std::vector<unsigned int> cartesian_sum(std::vector<std::vector<unsigned int>> vecs, unsigned int depth = 0){
+        
+
+    }
+
     // Get the entire tensor in a form of a 1D array
     // This can be dangerous, but necessary for saving memory.
     T *getTensor(){
@@ -115,16 +174,26 @@ public:
     // Construct by size, randomly assign values
     Layer(unsigned int size) : Tensor<T>({1, size}){}
 
-    // Compute the value for this layer's nodes based on the previous layer and weights
-    // Technically, it's a product of a vector and a matrix
+    /**
+     * Compute the value for this layer's nodes based on the previous layer and weights
+     * 
+     * Technically, it's a product of a vector and a matrix
+     */
     void compute(Layer<T> prev, Tensor<T> weights){
         std::vector<unsigned int> dim = weights.getDim();
         if (prev.getDim()[1] != dim[0] || dim[1] != this->getDim()[1]){
             throw std::runtime_error("weights and previous layer do not have appropriate size to make a product\n");    
         }
+
         
         T *thisLayer = this->getTensor();
+        T *prevLayer = prev->getTensor();
+        T *weightsTensor = weights->getTensor();
         
+        // weights x prevLayer
+        
+        
+
     }
 };
 
@@ -136,48 +205,43 @@ class Model {
 private:
     std::vector<float> weights;
     std::vector<float> biases;
-    std::vector<Layer> layers;
+    std::vector<Layer<float>> layers;
     float learn_rate = 0.01;
 public:
-    /**
-     * Random constructor
-     * 
-     * This way to creating a model will randomly assign the value for 
-     */
-    Model(std::vector<Layer> layers){
-        if (layers.size() <= 1){
-            throw std::runtime_error("There must be more than 1 layer for a model\n");
-        }
 
-        // Set the size for weights and biases matrices
-        unsigned int total_weights = 0;
-        unsigned int total_biases = 0;
-        for (unsigned int i = 1; i < layers.size(); i++){
-            total_weights += (layers[i - 1].getSize() * layers[i].getSize());
-            total_biases += layers[i].getSize();
-        }
-        weights.resize(total_weights);
-        biases.resize(total_biases);
-
-        // The number of weights is always higher than the number of biases
-        // So can group their assignment into a single for loop
-        
-        for (int i = 0; i < weights.size(); i++){
-            
-        }
-
-        // Set the layers
-        this->layers = layers;
-    }
-
-    
 
     
 };
 
 
 int main(void){
-    Tensor<float> weights({2, 3, 4});
+    Tensor<float> matrix({4, 3});
+    matrix.randomlyInit();
     
+    float *mat = matrix.getTensor();
+    for (int i = 0; i < 3; i++){
+        for (int j = 0; j < 4; j++){
+            std::cout << mat[i * 4 + j] << " ";
+        }
+        std::cout << std::endl;
+    }
     
+    Tensor<float> subtensor = matrix.getTensor({
+                                                {1,3}, 
+                                                {0,3}
+                                            });
+
+    std::cout << "Printing new subtensor" << std::endl;
+    
+    float *tensor = subtensor.getTensor();
+    std::vector<unsigned int> dim = subtensor.getDim();
+    for (int i = 0; i < 3; i++){
+        for (int j = 0; j < 2; j++){
+            std::cout << tensor[i * 2 + j] << " ";
+        }
+        std::cout << std::endl;    
+    }
+    
+
+    return 0;
 }
