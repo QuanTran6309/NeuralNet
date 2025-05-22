@@ -4,11 +4,27 @@
 #include <sstream>
 #include <random>  
 #include <type_traits>
+#include <memory>
 
+// Produce the cartesian product and sum each element within each set
+std::vector<unsigned int> sumOfCartesianProd(std::vector<std::vector<unsigned int>> sets){
+    if (sets.size() == 1){
+        return sets[0];
+    }
+    std::vector<unsigned int> result;
+    std::vector<std::vector<unsigned int>> subSet(sets.begin() + 1, sets.end());
+    std::vector<unsigned int> deeperSet = sumOfCartesianProd(subSet);
+    for (unsigned int curr : sets[0]){
+        for (unsigned int deeper : deeperSet){
+            result.push_back(curr + deeper);
+        }
+    }
+    return result;
+}
 
 struct Range {
-    int start; // inlcusive
-    int end;   // exclusive
+    unsigned int start; // inlcusive
+    unsigned int end;   // inclusive
 };
 
 
@@ -17,7 +33,7 @@ class Tensor {
     static_assert(std::is_arithmetic<T>::value, "Tensor only takes numeric values");
 
 private:
-    T *tensor;
+    std::unique_ptr<T[]> tensor;
     std::vector<unsigned int> dimensions;
 
 public:
@@ -42,9 +58,36 @@ public:
             }
             total_entries *= dim;
         }
-        this->tensor = new T[total_entries];
+        this->tensor = std::make_unique<T[]>(total_entries);
     }
-    
+
+
+    // Construct a tensor from another tensor (vector form)
+    Tensor (std::vector<T> src_tensor, std::vector<unsigned int> dimensions){
+        this->tensor = std::make_unique<T[]>(src_tensor.size());
+        for (unsigned int i = 0; i < src_tensor.size(); i++){
+            this->tensor[i] = src_tensor[i];
+        }
+
+        this->dimensions = dimensions;
+    }
+
+    // Construct a tensor from another tensor (array form)
+    Tensor (T *src_tensor, std::vector<unsigned int> dimensions){
+        unsigned int total_entries = 1;
+        for (unsigned int dim : dimensions){
+            total_entries *= dim;
+        }
+
+        this->tensor = std::make_unique<T[]>(total_entries);
+        for (unsigned int i = 0; i < total_entries; i++){
+            this->tensor[i] = src_tensor[i];
+        }
+        this->dimensions = dimensions;
+    }
+
+
+    // Randomly assign value to all entries of the tensor.
     void randomlyInit(){
         // Get the entire flattened size.
         size_t total_entries = 1;
@@ -62,11 +105,6 @@ public:
         for (size_t i = 0; i < total_entries; i++){
             this->tensor[i] = dist(gen);
         }
-    }
-
-    // Must free the allocated memory for the tensor.
-    ~Tensor(){
-        delete[] this->tensor;
     }
 
     // entry is vector indicating the position of the entry in the tensor user want to get
@@ -94,76 +132,111 @@ public:
         return this->tensor[index];
     }
 
-    // Get just a portion of a tensor,
-    // Tensor slicing
-    Tensor<T> getTensor(std::vector<Range> bounds){
-
-        // Later add more condition here in case bounds is out of bound
-
-        // Calculate the total number of entries, dimensions, and bounds for a new tensor
-        unsigned int total_entries = 1;
-        unsigned int prevSize = 1;
-        std::vector<unsigned int> newDim;
-        std::vector<unsigned int> indices; // Determine at which location on the current tensor to be copied to the new tensor
-        for (unsigned int i = 0; i < bounds.size(); i++){
-            unsigned int range = bounds[i].end - bounds[i].start;
-            total_entries *= range;
-            newDim.push_back(range);
-
-            // Form the index for later getting and assigning new tensor value
-            std::vector<unsigned int> index;
-            for (unsigned int j = bounds[i].start; j < bounds[i].end; j++){
-                index.push_back(j * prevSize);
-            }
-            if (indices.size() == 0){
-                indices = index;
-            }
-            else {
-                std::vector<unsigned int> buffer;
-                for (unsigned int idx : index){
-                    for (unsigned int idc : indices){
-                        buffer.push_back(idx + idc);
-                    }
-                }
-                indices = buffer;
-            }
-            prevSize *= this->dimensions[i];
-        }
-
-        // Create and get new tensor
-        Tensor<T> newTensor(newDim);
-        T *newTensor_ptr = newTensor.getTensor();
-
-        std::cout << "Printing the indices" << std::endl;
-        for (int i = 0; i < indices.size(); i++){
-            std::cout << indices[i] << "=>" << this->tensor[indices[i]] << std::endl;
-        }
-        
-
-        // Copy value to new tensor.
-        unsigned int itr = 0;
-        while (itr < total_entries){
-            newTensor_ptr[itr] = this->tensor[indices[itr]];
-            itr++;
-        }
-        return newTensor;
-    }
-
-    std::vector<unsigned int> cartesian_sum(std::vector<std::vector<unsigned int>> vecs, unsigned int depth = 0){
-        
-
-    }
-
-    // Get the entire tensor in a form of a 1D array
-    // This can be dangerous, but necessary for saving memory.
-    T *getTensor(){
-        return this->tensor;
-    }
 
     // Get the size of the tensor
     std::vector<unsigned int> getDim(){
         return this->dimensions;
     }
+
+    // Get just a portion of a tensor,
+    // Tensor slicing
+    Tensor<T> getTensor(std::vector<Range> bounds){
+        if (bounds.size() > this->dimensions.size()){
+            throw std::runtime_error("Bounds' dimension exceeds tensor's dimension");
+        }
+
+        // Used to store the indices for each entry that we'll copy from source tensor
+        std::vector<unsigned int> indices;
+        
+        // Get the new dimension for the new tensor
+        std::vector<unsigned int> newDim;
+
+        // It's going backward so also need backward prevSize
+        unsigned int prevSize = 1;
+        for (unsigned int i = 0; i < this->dimensions.size() - 1; i++){
+            prevSize *= this->dimensions[i];
+        }
+        
+        /**
+         * For example: bounds = {
+         *                        {1:3}
+         *                        {0:2}
+         *                        {2:4} 
+         *                       }
+         * The loop will convert that to
+         *              {
+         *              {1, 2, 3},
+         *              {0, 1, 2} * 0th dim,
+         *              {2, 3, 4} * 0th dim * 1th dim
+         *              }
+         * and finally perform cartesian product and sum all of elements within each set to get the set
+         * of indices to copy from
+         *
+         * We need to iterate from the bottom of the bounds to ensure the ascending order of the offsets
+         */
+        for (int i = bounds.size() - 1; i >= 0; i--){
+            Range bound = bounds[i];
+            std::vector<unsigned int> index;
+
+            // 1:4 get all entries from 1 to 4
+            if (bound.start <= bound.end){
+                if (bound.end >= this->dimensions[i]){
+                    throw std::runtime_error("Index out of bound");
+                }
+                unsigned int dimSize = bound.end - bound.start + 1;
+
+                // Insert the size for this dimension to newDim
+                newDim.insert(newDim.begin(), dimSize);
+                
+                // Insert indices 
+                for (unsigned int i = bound.start; i <= bound.end; i++){
+                    index.push_back(i * prevSize);
+                }
+
+            }
+            // 4:1 get all entries from 0->1 and from 4->end
+            else {
+                if (bound.start >= this->dimensions[i]){
+                    throw std::runtime_error("Index out of bound");
+                }
+                unsigned int dimSize = bound.end + 1 + (this->dimensions[i] - bound.start);
+
+                // Insert the size for this dimension to newDim
+                newDim.insert(newDim.begin(), dimSize);
+
+                // Insert indices 
+                for (unsigned int j = 0; j <= bound.end; j++){
+                    index.push_back(j * prevSize);
+                }
+                for (unsigned int j = bound.start; j < this->dimensions[i]; j++){
+                    index.push_back(j * prevSize);
+                }
+            }
+            
+            if (i > 0){
+                prevSize /= this->dimensions[i - 1];
+            }
+            
+            // Process the indices
+            if (indices.size() != 0){
+                indices = sumOfCartesianProd({indices, index});
+            }
+            else{
+                indices = index;
+            }
+            
+        }
+
+        T *newTensor = new T[std::accumulate(newDim.begin(), newDim.end(), 1, std::multiplies<unsigned int>())];
+        for (unsigned int i = 0; i < indices.size(); i++){
+            newTensor[i] = this->tensor[indices[i]];
+        }
+        
+        Tensor<T> new_tensor(newTensor, newDim);
+
+        return new_tensor;
+    }
+
 };
 
 template<typename T>
@@ -214,34 +287,15 @@ public:
 };
 
 
+
+
 int main(void){
-    Tensor<float> matrix({4, 3});
-    matrix.randomlyInit();
     
-    float *mat = matrix.getTensor();
-    for (int i = 0; i < 3; i++){
-        for (int j = 0; j < 4; j++){
-            std::cout << mat[i * 4 + j] << " ";
-        }
-        std::cout << std::endl;
-    }
-    
-    Tensor<float> subtensor = matrix.getTensor({
-                                                {1,3}, 
-                                                {0,3}
-                                            });
-
-    std::cout << "Printing new subtensor" << std::endl;
-    
-    float *tensor = subtensor.getTensor();
-    std::vector<unsigned int> dim = subtensor.getDim();
-    for (int i = 0; i < 3; i++){
-        for (int j = 0; j < 2; j++){
-            std::cout << tensor[i * 2 + j] << " ";
-        }
-        std::cout << std::endl;    
-    }
-    
-
+    Tensor<float> tensor({4,3,2});
+    tensor.getTensor({
+        {2, 3},
+        {0, 1},
+        {1, 1}
+    });
     return 0;
 }
