@@ -33,7 +33,7 @@ class Tensor {
     static_assert(std::is_arithmetic<T>::value, "Tensor only takes numeric values");
 
 private:
-    std::unique_ptr<T[]> tensor;
+    std::shared_ptr<T[]> tensor;
     std::vector<unsigned int> dimensions;
 
 public:
@@ -51,41 +51,46 @@ public:
         this->dimensions = dimensions;
 
         // Set the size for the tensor
-        size_t total_entries = 1;
-        for (unsigned int dim : dimensions){
-            if (dim == 0){
-                throw std::runtime_error("Dimension of a tensor cannot be 0");
-            }
-            total_entries *= dim;
-        }
-        this->tensor = std::make_unique<T[]>(total_entries);
+        this->tensor = std::shared_ptr<T[]>(new T[this->getTotalEntries()]);
     }
 
 
     // Construct a tensor from another tensor (vector form)
     Tensor (std::vector<T> src_tensor, std::vector<unsigned int> dimensions){
-        this->tensor = std::make_unique<T[]>(src_tensor.size());
+        this->tensor = std::shared_ptr<T[]>(new T[src_tensor.size()]);
         for (unsigned int i = 0; i < src_tensor.size(); i++){
             this->tensor[i] = src_tensor[i];
         }
-
         this->dimensions = dimensions;
     }
 
+    
     // Construct a tensor from another tensor (array form)
     Tensor (T *src_tensor, std::vector<unsigned int> dimensions){
-        unsigned int total_entries = 1;
-        for (unsigned int dim : dimensions){
-            total_entries *= dim;
-        }
+        this->dimensions = dimensions;
+        unsigned int total_entries = this->getTotalEntries();
 
-        this->tensor = std::make_unique<T[]>(total_entries);
+        this->tensor = std::shared_ptr<T[]>(new T[total_entries]);
         for (unsigned int i = 0; i < total_entries; i++){
             this->tensor[i] = src_tensor[i];
         }
-        this->dimensions = dimensions;
     }
 
+
+    // Get the total number of entries of this tensor, depending on the dimension size
+    size_t getTotalEntries(){
+        return std::accumulate(this->dimensions.begin(), this->dimensions.end(), 1, std::multiplies<unsigned int>());
+    }
+
+    // Return an access point to the tensor without allowing to modify it.
+    const T* getAll(){
+        return this->tensor.get();
+    }
+    
+    // Get the size of the tensor
+    std::vector<unsigned int> getDim(){
+        return this->dimensions;
+    }
 
     // Randomly assign value to all entries of the tensor.
     void randomlyInit(){
@@ -105,6 +110,18 @@ public:
         for (size_t i = 0; i < total_entries; i++){
             this->tensor[i] = dist(gen);
         }
+    }
+
+    /**
+     * Set the tensor's entries from src_tensor
+     * 
+     * The number of entries of src_tensor must match with this tensor.
+     */
+    void setTensor(T *src_tensor, size_t num_entries){
+        if (num_entries != this->getTotalEntries()){
+            throw std::runtime_error("src_tensor has different number of entries than this tensor");
+        }
+        std::copy(src_tensor, src_tensor + num_entries, this->tensor.get());
     }
 
     // entry is vector indicating the position of the entry in the tensor user want to get
@@ -132,12 +149,7 @@ public:
         return this->tensor[index];
     }
 
-
-    // Get the size of the tensor
-    std::vector<unsigned int> getDim(){
-        return this->dimensions;
-    }
-
+    
     // Get just a portion of a tensor,
     // Tensor slicing
     Tensor<T> getSlicedTensor(std::vector<Range> bounds){
@@ -151,7 +163,7 @@ public:
         // Get the new dimension for the new tensor
         std::vector<unsigned int> newDim;
 
-        // It's going backward so also need backward prevSize
+        // To iterate a tensor in one dimension, we have to use [index * (product of all previous dimension size)]
         unsigned int prevSize = 1;
         for (unsigned int i = 0; i < this->dimensions.size() - 1; i++){
             prevSize *= this->dimensions[i];
@@ -242,7 +254,14 @@ class Layer : public Tensor<T>{
 private:
     
 public:
-    // Construct by size, randomly assign values
+    /**
+     * Construct by size = the number of nodes, all nodes are not initialized
+     * 
+     * The dimension of layer is {1, size}, actually it can be just {size} but I want to
+     * keep the consistency with the MAXTRIX * VECTOR formula I saw in my linear algebra class.
+     * So I order the Layer as 2 dimensional with the first dimension just have size of 1.
+     * Technically it's a 1 dimensional array but stands vertically.
+     */
     Layer(unsigned int size) : Tensor<T>({1, size}){}
 
     /**
@@ -250,22 +269,26 @@ public:
      * 
      * Technically, it's a product of a vector and a matrix
      */
-    void compute(Layer<T> prev, Tensor<T> weights){
+    void compute(Layer<T> prevLayer, ){
+        
         std::vector<unsigned int> dim = weights.getDim();
-        if (prev.getDim()[1] != dim[0] || dim[1] != this->getDim()[1]){
+        if (prevLayer.getDim()[1] != dim[0] || dim[1] != this->getDim()[1]){
             throw std::runtime_error("weights and previous layer do not have appropriate size to make a product\n");    
         }
 
+        const T *prevTensor = prevLayer.getAll();
         
-        T *thisLayer = this->getTensor();
-        T *prevLayer = prev->getTensor();
-        T *weightsTensor = weights->getTensor();
-        
-        // weights x prevLayer
-        
-        
-
     }
+};
+
+template<typename T>
+class Weights : public Tensor<T>{
+
+private:
+
+public:
+    Weights(unsigned int prevTotalEntries, 
+            unsigned int nextTotalEntries) : Tensor<T>({prevTotalEntries, nextTotalEntries}){}
 };
 
 
@@ -274,11 +297,13 @@ public:
 
 class Model {
 private:
-    std::vector<float> weights;
+    std::vector<Weights> weights;
     std::vector<float> biases;
     std::vector<Layer<float>> layers;
     float learn_rate = 0.01;
 public:
+
+    Model
 
 
     
@@ -286,14 +311,22 @@ public:
 
 
 
-
 int main(void){
-    
+
+    /*
     Tensor<float> tensor({4,3,2});
-    tensor.getTensor({
+    tensor.getSlicedTensor({
         {2, 3},
         {0, 1},
         {1, 1}
     });
+    */
+
+    Layer<float> layer(6);
+    Layer<float> prevlayer(6);
+    prevlayer.randomlyInit();
+
+
+    layer.compute(prevlayer);
     return 0;
 }
