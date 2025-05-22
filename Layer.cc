@@ -140,7 +140,7 @@ public:
 
     // Get just a portion of a tensor,
     // Tensor slicing
-    Tensor<T> getTensor(std::vector<Range> bounds){
+    Tensor<T> getSlicedTensor(std::vector<Range> bounds){
         if (bounds.size() > this->dimensions.size()){
             throw std::runtime_error("Bounds' dimension exceeds tensor's dimension");
         }
@@ -192,7 +192,6 @@ public:
                 for (unsigned int i = bound.start; i <= bound.end; i++){
                     index.push_back(i * prevSize);
                 }
-
             }
             // 4:1 get all entries from 0->1 and from 4->end
             else {
@@ -224,7 +223,6 @@ public:
             else{
                 indices = index;
             }
-            
         }
 
         T *newTensor = new T[std::accumulate(newDim.begin(), newDim.end(), 1, std::multiplies<unsigned int>())];
