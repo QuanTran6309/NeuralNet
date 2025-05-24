@@ -1,33 +1,32 @@
-#include <iostream>
-#include <iomanip>
-#include <vector>
-#include <sstream>
+
+#ifndef TENSOR
+#define TENSOR
+#include <stdexcept>
 #include <random>  
 #include <type_traits>
 #include <memory>
+#include <vector>
 
-// Produce the cartesian product and sum each element within each set
-std::vector<unsigned int> sumOfCartesianProd(std::vector<std::vector<unsigned int>> sets){
-    if (sets.size() == 1){
-        return sets[0];
-    }
-    std::vector<unsigned int> result;
-    std::vector<std::vector<unsigned int>> subSet(sets.begin() + 1, sets.end());
-    std::vector<unsigned int> deeperSet = sumOfCartesianProd(subSet);
-    for (unsigned int curr : sets[0]){
-        for (unsigned int deeper : deeperSet){
-            result.push_back(curr + deeper);
-        }
-    }
-    return result;
-}
+#include "utils.h"
+
+enum class TensorType {
+    Tensor,
+    Layer,
+    Weights,
+    Biases
+};
+
+class TensorBase {
+public:
+    virtual TensorType getType() = 0;
+    virtual ~TensorBase(){};
+};
+
 
 struct Range {
     unsigned int start; // inlcusive
     unsigned int end;   // inclusive
 };
-
-
 template<typename T>
 class Tensor {
     static_assert(std::is_arithmetic<T>::value, "Tensor only takes numeric values");
@@ -37,6 +36,13 @@ private:
     std::vector<unsigned int> dimensions;
 
 public:
+    // Virtual destructor for polymorphism
+    virtual ~Tensor() = default;
+    
+    virtual TensorType getType() {
+        return TensorType::Tensor;
+    }
+    
     /**
      * Init a Tensor by size, randomly assign each entries
      * 
@@ -76,6 +82,8 @@ public:
         }
     }
 
+    
+
 
     // Get the total number of entries of this tensor, depending on the dimension size
     size_t getTotalEntries(){
@@ -102,13 +110,9 @@ public:
             }
             total_entries *= dim;
         }
-        
-        // Randomly assign the entries.
-        std::random_device rd;  
-        std::mt19937 gen(rd()); 
-        std::uniform_real_distribution<T> dist(-100, 100);
+
         for (size_t i = 0; i < total_entries; i++){
-            this->tensor[i] = dist(gen);
+            this->tensor[i] = Utils::getRealRandom(-100, 100);
         }
     }
 
@@ -230,7 +234,7 @@ public:
             
             // Process the indices
             if (indices.size() != 0){
-                indices = sumOfCartesianProd({indices, index});
+                indices = Utils::sumOfCartesianProd({indices, index});
             }
             else{
                 indices = index;
@@ -249,84 +253,5 @@ public:
 
 };
 
-template<typename T>
-class Layer : public Tensor<T>{
-private:
-    
-public:
-    /**
-     * Construct by size = the number of nodes, all nodes are not initialized
-     * 
-     * The dimension of layer is {1, size}, actually it can be just {size} but I want to
-     * keep the consistency with the MAXTRIX * VECTOR formula I saw in my linear algebra class.
-     * So I order the Layer as 2 dimensional with the first dimension just have size of 1.
-     * Technically it's a 1 dimensional array but stands vertically.
-     */
-    Layer(unsigned int size) : Tensor<T>({1, size}){}
 
-    /**
-     * Compute the value for this layer's nodes based on the previous layer and weights
-     * 
-     * Technically, it's a product of a vector and a matrix
-     */
-    void compute(Layer<T> prevLayer, ){
-        
-        std::vector<unsigned int> dim = weights.getDim();
-        if (prevLayer.getDim()[1] != dim[0] || dim[1] != this->getDim()[1]){
-            throw std::runtime_error("weights and previous layer do not have appropriate size to make a product\n");    
-        }
-
-        const T *prevTensor = prevLayer.getAll();
-        
-    }
-};
-
-template<typename T>
-class Weights : public Tensor<T>{
-
-private:
-
-public:
-    Weights(unsigned int prevTotalEntries, 
-            unsigned int nextTotalEntries) : Tensor<T>({prevTotalEntries, nextTotalEntries}){}
-};
-
-
-
-
-
-class Model {
-private:
-    std::vector<Weights> weights;
-    std::vector<float> biases;
-    std::vector<Layer<float>> layers;
-    float learn_rate = 0.01;
-public:
-
-    Model
-
-
-    
-};
-
-
-
-int main(void){
-
-    /*
-    Tensor<float> tensor({4,3,2});
-    tensor.getSlicedTensor({
-        {2, 3},
-        {0, 1},
-        {1, 1}
-    });
-    */
-
-    Layer<float> layer(6);
-    Layer<float> prevlayer(6);
-    prevlayer.randomlyInit();
-
-
-    layer.compute(prevlayer);
-    return 0;
-}
+#endif
