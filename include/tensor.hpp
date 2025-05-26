@@ -7,26 +7,15 @@
 #include <memory>
 #include <vector>
 
-#include "utils.h"
+#include "utils.hpp"
 
-enum class TensorType {
-    Tensor,
-    Layer,
-    Weights,
-    Biases
-};
-
-class TensorBase {
-public:
-    virtual TensorType getType() = 0;
-    virtual ~TensorBase(){};
-};
 
 
 struct Range {
     unsigned int start; // inlcusive
     unsigned int end;   // inclusive
 };
+
 template<typename T>
 class Tensor {
     static_assert(std::is_arithmetic<T>::value, "Tensor only takes numeric values");
@@ -38,11 +27,8 @@ private:
 public:
     // Virtual destructor for polymorphism
     virtual ~Tensor() = default;
-    
-    virtual TensorType getType() {
-        return TensorType::Tensor;
-    }
-    
+    Tensor() = default;
+
     /**
      * Init a Tensor by size, randomly assign each entries
      * 
@@ -57,13 +43,13 @@ public:
         this->dimensions = dimensions;
 
         // Set the size for the tensor
-        this->tensor = std::shared_ptr<T[]>(new T[this->getTotalEntries()]);
+        this->tensor = std::shared_ptr<T[]>(new T[this->getTotalEntries()], std::default_delete<T[]>());
     }
 
 
     // Construct a tensor from another tensor (vector form)
     Tensor (std::vector<T> src_tensor, std::vector<unsigned int> dimensions){
-        this->tensor = std::shared_ptr<T[]>(new T[src_tensor.size()]);
+        this->tensor = std::shared_ptr<T[]>(new T[src_tensor.size()], std::default_delete<T[]>());
         for (unsigned int i = 0; i < src_tensor.size(); i++){
             this->tensor[i] = src_tensor[i];
         }
@@ -76,13 +62,11 @@ public:
         this->dimensions = dimensions;
         unsigned int total_entries = this->getTotalEntries();
 
-        this->tensor = std::shared_ptr<T[]>(new T[total_entries]);
+        this->tensor = std::shared_ptr<T[]>(new T[total_entries], std::default_delete<T[]>());
         for (unsigned int i = 0; i < total_entries; i++){
             this->tensor[i] = src_tensor[i];
         }
     }
-
-    
 
 
     // Get the total number of entries of this tensor, depending on the dimension size
@@ -90,9 +74,12 @@ public:
         return std::accumulate(this->dimensions.begin(), this->dimensions.end(), 1, std::multiplies<unsigned int>());
     }
 
-    // Return an access point to the tensor without allowing to modify it.
-    const T* getAll(){
+    // Iterator pattern : not really as safe as a true iterator.
+    const T* begin() const{
         return this->tensor.get();
+    }
+    const T* end() const{
+        return this->tensor.get() + this->getTotalEntries();
     }
     
     // Get the size of the tensor
