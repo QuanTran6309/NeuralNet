@@ -35,6 +35,24 @@ protected:
         return this->tensor;
     }
 
+    // Translate the position vector to the offset on the memory
+    unsigned int posVecToIndex(const std::vector<unsigned int>& pos){
+        if (pos.size() > this->dimensions.size() || pos.size() == 0){
+            throw std::runtime_error("Position vector is invalid");
+        }
+        unsigned int prevSize = 1;
+        unsigned int index = 0;
+        for (unsigned int i = 0; i < pos.size(); i++){
+            index += (pos[i] * prevSize);
+            prevSize *= this->dimensions[i];
+        }
+
+        if (index >= this->getTotalEntries()){
+            throw std::runtime_error("Index out of bound");
+        }
+
+        return index;
+    }
 public:
     // Virtual destructor for polymorphism
     virtual ~Tensor() = default;
@@ -113,7 +131,7 @@ public:
         Tensor<T> newTensor(this->getDim());
         std::shared_ptr<T[]> newTensorPtr = newTensor.getTensorPtr();
         
-        // Perform addition on this new tensor
+        // Perform subtraction on this new tensor
         for (unsigned int i = 0; i < other.getTotalEntries(); i++){
             newTensorPtr[i] = this->tensor[i] - otherTensorPtr[i];
         }
@@ -126,7 +144,7 @@ public:
         Tensor<T> newTensor(this->getDim());
         std::shared_ptr<T[]> newTensorPtr = newTensor.getTensorPtr();
         
-        // Perform addition on this new tensor
+        // Perform invertion on this new tensor
         for (unsigned int i = 0; i < newTensor.getTotalEntries(); i++){
             newTensorPtr[i] = -this->tensor[i];
         }
@@ -137,7 +155,7 @@ public:
 
 
     // Get the total number of entries of this tensor, depending on the dimension size
-    size_t getTotalEntries(){
+    size_t getTotalEntries() const {
         return std::accumulate(this->dimensions.begin(), this->dimensions.end(), 1, std::multiplies<unsigned int>());
     }
 
@@ -150,7 +168,7 @@ public:
     }
     
     // Get the size of the tensor
-    std::vector<unsigned int> getDim(){
+    std::vector<unsigned int> getDim() const{
         return this->dimensions;
     }
 
@@ -187,29 +205,34 @@ public:
         std::copy(src_tensor, src_tensor + num_entries, this->tensor.get());
     }
 
+    /**
+     * Set value for a single entry using a single index 
+     * 
+     * This index must be the offset on the platten tensor
+     */
+    void setEntry(unsigned int index, T value){
+        if (index >= this->getTotalEntries()){
+            throw std::runtime_error("Index out of bound");
+        }
+        this->tensor[index] = value;
+    }
+
+    /**
+     * Set value for a single entry using vector
+     * 
+     * The vector must reflect the position of the entry.
+     * The number of elements of the position vector cannot exceed the number
+     * of elements of the tensor's dimension.
+     */
+    void setEntry(const std::vector<unsigned int>& pos, T value){
+        unsigned int index = this->posVecToIndex(pos);
+        this->tensor[index] = value;
+    }
+
     // entry is vector indicating the position of the entry in the tensor user want to get
     // The order of value in entry is from the least to most significant dimension.
-    T getEntry(std::vector<unsigned int> entry){
-        if (entry.size() > this->dimensions.size()){
-            throw std::runtime_error("The entry has more dimensions than the matrix");
-        }
-
-        if (entry[0] >= this->dimensions[0]){
-            throw std::runtime_error("Entry does not exist");
-        }
-
-        // Calculate the index basde on the entry vector, dim0 + dim1 * size0 + dim2 * size0 * size1, and so on
-        unsigned int index = entry[0];
-        unsigned int prev_dimSize = 1;
-        for (int i = 1; i < entry.size(); i++){
-            if (entry[i] >= this->dimensions[i]){
-                throw std::runtime_error("Entry does not exist");
-            }
-            prev_dimSize *= this->dimensions[i];
-            index += (entry[i] * prev_dimSize);
-        }
-
-        return this->tensor[index];
+    T getEntry(const std::vector<unsigned int>& pos) const{
+        return this->tensor[this->posVecToIndex(pos)];
     }
 
     

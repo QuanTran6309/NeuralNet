@@ -7,11 +7,38 @@ class Matrix : public Tensor<T>{
     
 public:
     Matrix() = default;
+
+    // Init an empty matrix
     Matrix(unsigned int columns, unsigned int rows) : Tensor<T>({columns, rows}){}
+    
+    // Init a matrix from nested vector
+    Matrix(const std::vector<std::vector<T>>& src_mat) : Tensor<T>({src_mat[0].size(), src_mat.size()}){
+        for (unsigned int i = 1; i < src_mat.size(); i++){
+            if (src_mat[i].size() != src_mat[0].size()){
+                throw std::runtime_error("Matrix size is not legit");
+            }
+        }
+        
+        // Copy value into the Matrix
+        std::shared_ptr<T[]> matrixPtr = this->getTensorPtr();
+        for (unsigned int i = 0; i < src_mat.size(); i++){
+            for (unsigned int j = 0; j < src_mat[0].size(); j++){
+                matrixPtr[i * src_mat[0].size() + j] = src_mat[i][j];
+            }
+        }
+    }
+
+    // Init a matrix from given Tensor
+    Matrix(const Tensor<T>& tensor) : Tensor<T>(tensor.getDim()){
+        if (tensor.getDim().size() > 2){
+            throw std::runtime_error("Matrix size is invalue");
+        }
+        
+        std::copy(tensor.begin(), tensor.end(), this->getTensorPtr().get());
+    }
 
     // CPU matrix cross product.
     Matrix<T> operator*(const Matrix<T>& other) const{
-
         // Check if the size of two matrices fit
         std::vector<unsigned int> thisDim = this->getDim();
         std::vector<unsigned int> otherDim = other.getDim();
@@ -24,7 +51,7 @@ public:
         const T *thisPtr = this->begin();
 
         // Create maxtrix instance
-        Matrix<T> newMatrix(otherDim[0], thisgetDim[1]);
+        Matrix<T> newMatrix(otherDim[0], thisDim[1]);
         std::shared_ptr<T[]> newMatrixPtr = newMatrix.getTensorPtr();
         
         // Perform maxtrix cross product
@@ -40,6 +67,30 @@ public:
             }
         }
         return newMatrix;
+    }
+
+    Matrix<T> operator+(const Matrix<T>& other) const {
+        Tensor<T> result = Tensor<T>::operator+(other);
+        return Matrix<T>(result);
+    }
+
+    Matrix<T> operator-(const Matrix<T>& other) const {
+        Tensor<T> result = Tensor<T>::operator-(other);
+        return Matrix<T>(result);
+    }
+
+    Matrix<T> operator-() const {
+        Tensor<T> newMatrix(this->getDim());
+
+        std::shared_ptr<T[]> newMatrixPtr = newMatrix.getTensorPtr();
+
+        // Get this matrix's entries and copy to buffer
+        const T* thisPtr = this->begin();
+        for (unsigned int i = 0; i < newMatrix.getTotalEntries(); i++){
+            newMatrixPtr[i] = thisPtr[i];
+        }
+
+        return Matrix<T>(newMatrix);
     }
 };
 
