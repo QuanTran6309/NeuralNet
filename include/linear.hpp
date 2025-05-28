@@ -51,6 +51,8 @@ public:
         this->outLayer.setTensor(outVec, weightsDim[1]);
     }
 
+    
+
     Tensor<T> getOutPut(){
         return this->outLayer;
     }

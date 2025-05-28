@@ -11,6 +11,8 @@ namespace Utils {
     // Random utility
     float getRealRandom(float min, float max);
     int getIntRandom(int min, int max);
+
+    unsigned int bigToLittle_endian(const unsigned char* bytes);
 }
 
 

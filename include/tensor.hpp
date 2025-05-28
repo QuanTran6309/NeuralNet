@@ -24,6 +24,17 @@ private:
     std::shared_ptr<T[]> tensor;
     std::vector<unsigned int> dimensions;
 
+protected:
+    /**
+     * Get a direct access modifier of the tensor.
+     * 
+     * Must be careful with this because any changes to the returned pointer 
+     * can affect the original value of the tensor.
+     */
+    std::shared_ptr<T[]> getTensorPtr(){
+        return this->tensor;
+    }
+
 public:
     // Virtual destructor for polymorphism
     virtual ~Tensor() = default;
@@ -68,6 +79,62 @@ public:
         }
     }
 
+    // Honestly I just know how to implement tensor plus, minus
+    // I have not really found a way to implement tensor cross product.
+    Tensor<T> operator+(const Tensor<T>& other) const {
+        if (this->getDim() != other.getDim()){
+            throw std::runtime_error("Cannot perform addition on two different tensors");
+        }
+
+        // Get the access to the other tensor
+        const T *otherTensorPtr = other.begin();
+
+        // Create new tensor instance
+        Tensor<T> newTensor(this->getDim());
+        std::shared_ptr<T[]> newTensorPtr = newTensor.getTensorPtr();
+        
+        // Perform addition on this new tensor
+        for (unsigned int i = 0; i < other.getTotalEntries(); i++){
+            newTensorPtr[i] = this->tensor[i] + otherTensorPtr[i];
+        }
+
+        return newTensor;
+    }
+
+    Tensor<T> operator-(const Tensor<T>& other) const {
+        if (this->getDim() != other.getDim()){
+            throw std::runtime_error("Cannot perform addition on two different tensors");
+        }
+
+        // Get the access to the other tensor
+        const T *otherTensorPtr = other.begin();
+
+        // Create new tensor instance
+        Tensor<T> newTensor(this->getDim());
+        std::shared_ptr<T[]> newTensorPtr = newTensor.getTensorPtr();
+        
+        // Perform addition on this new tensor
+        for (unsigned int i = 0; i < other.getTotalEntries(); i++){
+            newTensorPtr[i] = this->tensor[i] - otherTensorPtr[i];
+        }
+
+        return newTensor;
+    }
+
+    Tensor<T> operator-() const {
+        // Create new tensor instance
+        Tensor<T> newTensor(this->getDim());
+        std::shared_ptr<T[]> newTensorPtr = newTensor.getTensorPtr();
+        
+        // Perform addition on this new tensor
+        for (unsigned int i = 0; i < newTensor.getTotalEntries(); i++){
+            newTensorPtr[i] = -this->tensor[i];
+        }
+
+        return newTensor;
+    }
+
+
 
     // Get the total number of entries of this tensor, depending on the dimension size
     size_t getTotalEntries(){
@@ -104,13 +171,18 @@ public:
     }
 
     /**
-     * Set the tensor's entries from src_tensor
+     * Set the entire tensor's entries from src_tensor
      * 
      * The number of entries of src_tensor must match with this tensor.
      */
     void setTensor(T *src_tensor, size_t num_entries){
         if (num_entries != this->getTotalEntries()){
             throw std::runtime_error("src_tensor has different number of entries than this tensor");
+        }
+
+        // If the tensor is sharing the memory with
+        if (this->tensor.use_count() > 1){
+            this->tensor = std::shared_ptr<T[]>(new T[num_entries], std::default_delete<T[]>());
         }
         std::copy(src_tensor, src_tensor + num_entries, this->tensor.get());
     }

@@ -1,4 +1,4 @@
-#include "utils.h"
+#include "utils.hpp"
 
 #include <random>
 
@@ -33,6 +33,14 @@ namespace Utils {
         static std::mt19937 gen(rd()); 
         std::uniform_int_distribution<int> dist(min, max);
         return dist(gen);
+    }
+
+
+    unsigned int bigToLittle_endian(const unsigned char* bytes){
+        return (bytes[0] << 24) |
+               (bytes[1] << 16) |
+               (bytes[2] << 8)  |
+               (bytes[3]);
     }
     
 }
