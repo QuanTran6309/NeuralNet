@@ -1,5 +1,7 @@
 #include "tensor.hpp"
 
+#ifndef MATRIX
+#define MATRIX
 
 template<typename T>
 class Matrix : public Tensor<T>{
@@ -93,4 +95,7 @@ public:
         return Matrix<T>(newMatrix);
     }
 };
+
+
+#endif
 

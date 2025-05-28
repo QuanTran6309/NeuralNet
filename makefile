@@ -19,7 +19,7 @@ OPENCV=$(shell pkg-config --cflags --libs opencv4)
 all: main
 
 main: $(INCLUDE_OBJ) $(DATA_OBJ) main.cpp
-	$(CXX) $(CXXFLAGS) $(DEBUGFLAG) $^ -o main $(OPENCV) 
+	$(CXX) $(CXXFLAGS) $(DEBUGFLAG) $^ -o main $(OPENCV)
 
 $(BUILD_DIR)/$(DATA_DIR)/%.o: $(DATA_DIR)/%.cpp
 	@mkdir -p $(dir $@)

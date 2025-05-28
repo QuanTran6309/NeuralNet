@@ -10,7 +10,7 @@
 template<typename T>
 class Linear{
     static_assert(std::is_arithmetic<T>::value, "Only numeric values");
-    
+
 private:
     Matrix<T> inLayer;
     Matrix<T> outLayer;
@@ -24,6 +24,7 @@ public:
         this->outLayer = Matrix<T>({1, out_nodes});
         this->weights = Matrix<T>({in_nodes, out_nodes});
         this->biases = Matrix<T>({1, out_nodes});
+
 
         // Activation function
         this->actFunc = actFunc;
