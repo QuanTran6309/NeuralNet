@@ -1,11 +1,13 @@
 #include <fstream>
 #include "tensor.hpp"
-
+#include "matrix.hpp"
+#include "utils.hpp"
+#include <opencv2/opencv.hpp>
 
 namespace DataEngine
 {
 class MNIST {
-    /**
+/**
  * Specifically used for loading and getting images of MNIST handwritten dataset.
  * 
  * Format of the MNIST image file:
@@ -40,8 +42,7 @@ public:
     // Get the total number of pixels per image
     unsigned int getTotalPixelsPerImage();
 
-    // Get image by index
-    Tensor<unsigned char> getImage(unsigned int index);
+    Matrix<unsigned int> getImage(unsigned int index);
 
     
     void displayImage(unsigned int nth);

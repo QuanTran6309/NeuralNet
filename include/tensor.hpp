@@ -1,6 +1,7 @@
 
 #ifndef TENSOR
 #define TENSOR
+
 #include <stdexcept>
 #include <random>  
 #include <type_traits>
@@ -21,8 +22,9 @@ class Tensor {
     static_assert(std::is_arithmetic<T>::value, "Tensor only takes numeric values");
 
 private:
-    std::shared_ptr<T[]> tensor;
+    
     std::vector<unsigned int> dimensions;
+    std::shared_ptr<T[]> tensor;
 
 protected:
     /**
@@ -36,7 +38,7 @@ protected:
     }
 
     // Translate the position vector to the offset on the memory
-    unsigned int posVecToIndex(const std::vector<unsigned int>& pos){
+    unsigned int posVecToIndex(const std::vector<unsigned int>& pos) const {
         if (pos.size() > this->dimensions.size() || pos.size() == 0){
             throw std::runtime_error("Position vector is invalid");
         }
@@ -54,6 +56,7 @@ protected:
         return index;
     }
 public:
+    
     // Virtual destructor for polymorphism
     virtual ~Tensor() = default;
     Tensor() = default;
@@ -77,7 +80,7 @@ public:
 
 
     // Construct a tensor from another tensor (vector form)
-    Tensor (std::vector<T> src_tensor, std::vector<unsigned int> dimensions){
+    Tensor (std::vector<T> src_tensor, const std::vector<unsigned int>& dimensions){
         this->tensor = std::shared_ptr<T[]>(new T[src_tensor.size()], std::default_delete<T[]>());
         for (unsigned int i = 0; i < src_tensor.size(); i++){
             this->tensor[i] = src_tensor[i];
@@ -87,7 +90,7 @@ public:
 
     
     // Construct a tensor from another tensor (array form)
-    Tensor (T *src_tensor, std::vector<unsigned int> dimensions){
+    Tensor (T *src_tensor, const std::vector<unsigned int>& dimensions){
         this->dimensions = dimensions;
         unsigned int total_entries = this->getTotalEntries();
 
@@ -172,22 +175,6 @@ public:
         return this->dimensions;
     }
 
-    // Randomly assign value to all entries of the tensor.
-    void randomlyInit(){
-        // Get the entire flattened size.
-        size_t total_entries = 1;
-        for (unsigned int dim : dimensions){
-            if (dim == 0){
-                throw std::runtime_error("Dimension of a tensor cannot be 0");
-            }
-            total_entries *= dim;
-        }
-
-        for (size_t i = 0; i < total_entries; i++){
-            this->tensor[i] = Utils::getRealRandom(-100, 100);
-        }
-    }
-
     /**
      * Set the entire tensor's entries from src_tensor
      * 
@@ -232,7 +219,8 @@ public:
     // entry is vector indicating the position of the entry in the tensor user want to get
     // The order of value in entry is from the least to most significant dimension.
     T getEntry(const std::vector<unsigned int>& pos) const{
-        return this->tensor[this->posVecToIndex(pos)];
+        unsigned int index = this->posVecToIndex(pos);
+        return this->tensor[index];
     }
 
     

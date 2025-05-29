@@ -1,7 +1,9 @@
-#include "tensor.hpp"
 
 #ifndef MATRIX
 #define MATRIX
+
+
+#include "tensor.hpp"
 
 template<typename T>
 class Matrix : public Tensor<T>{
@@ -27,6 +29,12 @@ public:
             for (unsigned int j = 0; j < src_mat[0].size(); j++){
                 matrixPtr[i * src_mat[0].size() + j] = src_mat[i][j];
             }
+        }
+    }
+
+    Matrix(T *src_tensor, const std::vector<unsigned int>& dimensions) : Tensor<T>(src_tensor, dimensions){
+        if (dimensions.size() > 2){
+            throw std::runtime_error("Matrix is not legit");
         }
     }
 

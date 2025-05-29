@@ -1,6 +1,5 @@
 #include "mnist.hpp"
-#include <opencv2/opencv.hpp>
-#include "utils.hpp"
+
 
 namespace DataEngine {
 
@@ -47,7 +46,7 @@ unsigned int MNIST::getTotalPixelsPerImage(){
 }
 
 // Get image by index
-Tensor<unsigned char> MNIST::getImage(unsigned int index){
+Matrix<unsigned int> MNIST::getImage(unsigned int index){
     if (index >= this->total){
         throw std::runtime_error("Index out of bound");
     }
@@ -57,11 +56,11 @@ Tensor<unsigned char> MNIST::getImage(unsigned int index){
 
     // Read the entire image into buffer.
     // Doing this can reduce File I/O
-    unsigned char buffer[this->npSize];
+    unsigned int buffer[this->npSize];
     this->srcFile.read((char *)buffer, this->npSize);
     
     // Form tensor : matrix
-    return Tensor<unsigned char>(buffer, {this->npWidth, this->npHeight});
+    return Matrix<unsigned int>(buffer, {this->npWidth, this->npHeight});
 }
 
 void MNIST::displayImage(unsigned int nth){
