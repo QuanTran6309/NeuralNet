@@ -23,10 +23,11 @@ class Tensor {
 
 private:
     
+protected:
     std::vector<unsigned int> dimensions;
     std::shared_ptr<T[]> tensor;
+    unsigned int totalEntries;
 
-protected:
     /**
      * Get a direct access modifier of the tensor.
      * 
@@ -73,9 +74,10 @@ public:
             throw std::runtime_error("The dimensions cannot be empty");
         }
         this->dimensions = dimensions;
+        this->totalEntries = std::accumulate(this->dimensions.begin(), this->dimensions.end(), 1, std::multiplies<unsigned int>());
 
         // Set the size for the tensor
-        this->tensor = std::shared_ptr<T[]>(new T[this->getTotalEntries()], std::default_delete<T[]>());
+        this->tensor = std::shared_ptr<T[]>(new T[this->totalEntries], std::default_delete<T[]>());
     }
 
 
@@ -86,18 +88,16 @@ public:
             this->tensor[i] = src_tensor[i];
         }
         this->dimensions = dimensions;
+        this->totalEntries = std::accumulate(this->dimensions.begin(), this->dimensions.end(), 1, std::multiplies<unsigned int>());
     }
 
     
     // Construct a tensor from another tensor (array form)
-    Tensor (T *src_tensor, const std::vector<unsigned int>& dimensions){
+    Tensor (const T *src_tensor, const std::vector<unsigned int>& dimensions){
         this->dimensions = dimensions;
-        unsigned int total_entries = this->getTotalEntries();
-
-        this->tensor = std::shared_ptr<T[]>(new T[total_entries], std::default_delete<T[]>());
-        for (unsigned int i = 0; i < total_entries; i++){
-            this->tensor[i] = src_tensor[i];
-        }
+        this->totalEntries = std::accumulate(this->dimensions.begin(), this->dimensions.end(), 1, std::multiplies<unsigned int>());
+        this->tensor = std::shared_ptr<T[]>(new T[this->totalEntries], std::default_delete<T[]>());
+        std::copy(src_tensor, src_tensor + this->totalEntries, this->tensor.get());
     }
 
     // Honestly I just know how to implement tensor plus, minus

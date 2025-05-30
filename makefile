@@ -21,6 +21,9 @@ all: main
 main: $(INCLUDE_OBJ) $(DATA_OBJ) main.cpp
 	$(CXX) $(CXXFLAGS) $(DEBUGFLAG) $^ -o main
 
+debug: $(INCLUDE_OBJ) $(DATA_OBJ) main.cpp
+	$(CXX) $(CXXFLAGS) $(DEBUGFLAG) $^ -o main $(OPENCV)
+
 $(BUILD_DIR)/%.o: %.cpp
 	@mkdir -p $(dir $@)
 	$(CXX) $(CXXFLAGS) -c $< -o $@

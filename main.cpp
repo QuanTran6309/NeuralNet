@@ -22,27 +22,27 @@ public:
 
     void forward(Matrix<float> input){
         layers[0].compute(input);
-        for (unsigned int i = 0; i < layers.size(); i++){
-            layers[i].compute(layers[i - 1].)
+        for (unsigned int i = 1; i < layers.size(); i++){
+            layers[i].compute(layers[i - 1].prevOut());
         }
     }
 
-    
-}
+    Matrix<float> outLayer(){
+        return this->layers[this->layers.size() - 1].prevOut();
+    }
+};
 
 int main(void){
     DataEngine::MNIST mnist("MNIST/train/images");
 
-    std::cout << mnist.getTotalPixelsPerImage() << std::endl;
 
-    Layer inputLayer(mnist.getTotalPixelsPerImage(), 500, ActFunc::Relu);
-    Layer hiddenLayer(500, 400, ActFunc::Relu);
-    Layer outLayer(400, 10, ActFunc::Relu);
+    Model model({
+        Layer(mnist.getTotalPixelsPerImage(), 500, ActFunc::Relu),
+        Layer(500, 400, ActFunc::Relu),
+        Layer(400, 10, ActFunc::Relu)
+    });
 
-    inputLayer.randomlyInit();
-    hiddenLayer.randomlyInit();
-    outLayer.randomlyInit();
-
+    model.forward(mnist.getImage(0));
 
     //Matrix<unsigned int> image = mnist.getImage(0);
     

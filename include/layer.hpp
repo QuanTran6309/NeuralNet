@@ -70,6 +70,9 @@ public:
         }
     }
 
+    Matrix<float> prevOut(){
+        return this->outLayer;
+    }
 };
 
 

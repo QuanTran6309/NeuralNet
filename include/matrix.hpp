@@ -43,9 +43,21 @@ public:
         if (tensor.getDim().size() > 2){
             throw std::runtime_error("Matrix size is invalue");
         }
-        
         std::copy(tensor.begin(), tensor.end(), this->getTensorPtr().get());
     }
+
+    // Compatible with different primitive data type
+    template<typename U>
+    Matrix(const Matrix<U>& other) : Tensor<T>(other.getDim()){
+        if (other.getDim().size() > 2){
+            throw std::runtime_error("Matrix size is invalid");
+        }
+
+        for (unsigned int i = 0; i < this->totalEntries; i++){
+            this->tensor[i] = static_cast<T> (*(other.begin() + i));
+        }
+    }
+
 
     // CPU matrix cross product.
     Matrix<T> operator*(const Matrix<T>& other) const{
