@@ -2,12 +2,33 @@
 #include "layer.hpp"
 #include "actfunc.hpp"
 #include "matrix.hpp"
-
 #include "data/mnist.hpp"
 #include <iostream>
 
 
+class Model{
+private:
+    std::vector<Layer> layers;
+public:
+    Model(const std::vector<Layer>& network, bool is_randomInit = true){
+        this->layers = network;
 
+        if (is_randomInit){
+            for (Layer layer : this->layers){
+                layer.randomlyInit();
+            }   
+        }
+    }
+
+    void forward(Matrix<float> input){
+        layers[0].compute(input);
+        for (unsigned int i = 0; i < layers.size(); i++){
+            layers[i].compute(layers[i - 1].)
+        }
+    }
+
+    
+}
 
 int main(void){
     DataEngine::MNIST mnist("MNIST/train/images");
@@ -21,11 +42,6 @@ int main(void){
     inputLayer.randomlyInit();
     hiddenLayer.randomlyInit();
     outLayer.randomlyInit();
-
-    Matrix<unsigned int> weights = inputLayer.weights;
-    cv::Mat image(weights.getDim()[1], weights.getDim()[0], CV_8UC1, weights.tensor.get());
-    cv::imshow("WEIGHTS", image);
-    cv::waitKey(0);
 
 
     //Matrix<unsigned int> image = mnist.getImage(0);

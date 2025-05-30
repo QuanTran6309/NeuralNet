@@ -63,23 +63,5 @@ Matrix<unsigned int> MNIST::getImage(unsigned int index){
     return Matrix<unsigned int>(buffer, {this->npWidth, this->npHeight});
 }
 
-void MNIST::displayImage(unsigned int nth){
-    if (nth >= this->total){
-        return;
-    }
-
-    this->srcFile.seekg(16 + nth * this->npSize);
-
-    char buffer[this->npSize];
-    this->srcFile.read(buffer, this->npSize);
-
-
-    std::string image_name = "MNIST at index " + nth;
-    cv::Mat image(this->npHeight, this->npWidth, CV_8UC1, buffer);
-    cv::imshow(image_name, image);
-    cv::waitKey(0);
-}
-
-
 
 }

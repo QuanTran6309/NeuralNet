@@ -16,6 +16,7 @@ private:
     Matrix<float> biases;
     float (* actFunc)(float); // Function pointer to activation function in /include/actfunc.hpp
 public:
+    Layer() = default;
 
     Layer(unsigned int in_nodes, unsigned int out_nodes, float(* actFunc)(float) = nullptr){
         this->inLayer = Matrix<float>({1, in_nodes});

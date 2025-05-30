@@ -2,7 +2,7 @@
 #include "tensor.hpp"
 #include "matrix.hpp"
 #include "utils.hpp"
-#include <opencv2/opencv.hpp>
+
 
 namespace DataEngine
 {
@@ -43,9 +43,8 @@ public:
     unsigned int getTotalPixelsPerImage();
 
     Matrix<unsigned int> getImage(unsigned int index);
-
-    
-    void displayImage(unsigned int nth);
 };
+
+
 
 }
