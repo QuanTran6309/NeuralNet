@@ -50,7 +50,7 @@ protected:
             prevSize *= this->dimensions[i];
         }
 
-        if (index >= this->getTotalEntries()){
+        if (index >= this->totalEntries){
             throw std::runtime_error("Index out of bound");
         }
 
@@ -103,20 +103,16 @@ public:
     // Honestly I just know how to implement tensor plus, minus
     // I have not really found a way to implement tensor cross product.
     Tensor<T> operator+(const Tensor<T>& other) const {
-        if (this->getDim() != other.getDim()){
+        if (this->dimensions != other.getDim()){
             throw std::runtime_error("Cannot perform addition on two different tensors");
         }
 
-        // Get the access to the other tensor
-        const T *otherTensorPtr = other.begin();
-
         // Create new tensor instance
-        Tensor<T> newTensor(this->getDim());
-        std::shared_ptr<T[]> newTensorPtr = newTensor.getTensorPtr();
+        Tensor<T> newTensor(this->dimensions);
         
         // Perform addition on this new tensor
-        for (unsigned int i = 0; i < other.getTotalEntries(); i++){
-            newTensorPtr[i] = this->tensor[i] + otherTensorPtr[i];
+        for (unsigned int i = 0; i < other.totalEntries; i++){
+            newTensor.tensor[i] = this->tensor[i] + other.tensor[i];
         }
 
         return newTensor;
@@ -127,16 +123,12 @@ public:
             throw std::runtime_error("Cannot perform addition on two different tensors");
         }
 
-        // Get the access to the other tensor
-        const T *otherTensorPtr = other.begin();
-
         // Create new tensor instance
         Tensor<T> newTensor(this->getDim());
-        std::shared_ptr<T[]> newTensorPtr = newTensor.getTensorPtr();
-        
+
         // Perform subtraction on this new tensor
-        for (unsigned int i = 0; i < other.getTotalEntries(); i++){
-            newTensorPtr[i] = this->tensor[i] - otherTensorPtr[i];
+        for (unsigned int i = 0; i < other.totalEntries; i++){
+            newTensor.tensor[i] = this->tensor[i] - other.tensor[i];
         }
 
         return newTensor;
@@ -145,17 +137,24 @@ public:
     Tensor<T> operator-() const {
         // Create new tensor instance
         Tensor<T> newTensor(this->getDim());
-        std::shared_ptr<T[]> newTensorPtr = newTensor.getTensorPtr();
-        
+
         // Perform invertion on this new tensor
         for (unsigned int i = 0; i < newTensor.getTotalEntries(); i++){
-            newTensorPtr[i] = -this->tensor[i];
+            newTensor.tensor[i] = -this->tensor[i];
         }
 
         return newTensor;
     }
 
-
+    // entry is vector indicating the position of the entry in the tensor user want to get
+    // The order of value in entry is from the least to most significant dimension.
+    T& operator()(std::vector<unsigned int> posVec){
+        return this->tensor[this->posVecToIndex(posVec)];
+    }
+    const T& operator()(std::vector<unsigned int> posVec) const{
+        return this->tensor[this->posVecToIndex(posVec)];
+    }
+    
 
     // Get the total number of entries of this tensor, depending on the dimension size
     size_t getTotalEntries() const {
@@ -177,7 +176,6 @@ public:
 
     /**
      * Set the entire tensor's entries from src_tensor
-     * 
      * The number of entries of src_tensor must match with this tensor.
      */
     void setTensor(T *src_tensor, size_t num_entries){
@@ -194,7 +192,6 @@ public:
 
     /**
      * Set value for a single entry using a single index 
-     * 
      * This index must be the offset on the platten tensor
      */
     void setEntry(unsigned int index, T value){
@@ -216,13 +213,26 @@ public:
         this->tensor[index] = value;
     }
 
-    // entry is vector indicating the position of the entry in the tensor user want to get
-    // The order of value in entry is from the least to most significant dimension.
+    /**
+     * Reset the dimension for the Tensor.
+     * 
+     * This does not change the relative position of each entry in the RAM but will change
+     * the way the tensor understand each entry. The total number of entries of the new dimension
+     * must be the same with the current total of entry.
+     * 
+     * No entry will be lost after this operation.
+     */
+    void reShape(const std::vector<unsigned int>& newDim){
+        if ((unsigned int)std::accumulate(newDim.begin(), newDim.end(), 1, std::multiplies<unsigned int>()) != this->totalEntries){
+            throw std::runtime_error("New dimension is invalid");
+        }
+        this->dimensions = newDim;
+    }
+    
     T getEntry(const std::vector<unsigned int>& pos) const{
         unsigned int index = this->posVecToIndex(pos);
         return this->tensor[index];
     }
-
     
     // Get just a portion of a tensor,
     // Tensor slicing

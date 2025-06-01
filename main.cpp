@@ -42,11 +42,23 @@ int main(void){
         Layer(400, 10, ActFunc::Relu)
     });
 
-    model.forward(mnist.getImage(0));
+    Matrix<unsigned int> image = mnist.getImage(0);
+    image.reShape({1, mnist.getTotalPixelsPerImage()});
+    model.forward(image);
 
     //Matrix<unsigned int> image = mnist.getImage(0);
-    
 
+    /*
+    Tensor<int> tensor1({0, 1, 2}, {3, 1});
+    Tensor<int> tensor2({3, 4, 5}, {3, 1});
+
+    Tensor<int> tensor = tensor1 + tensor2;
+
+    for (unsigned int i = 0; i < 3; i++){
+        std::cout << tensor.getEntry({i, 0}) << " ";
+    }
+    std::cout << std::endl;
+    */
     return 0;
 }
 

@@ -12,13 +12,6 @@ namespace Utils {
     // Random utility
     float getRealRandom(float min, float max);
     int getIntRandom(int min, int max);
-    template<typename T>
-    T getRandom(T min, T max){
-        static std::random_device rd;  
-        static std::mt19937 gen(rd()); 
-        std::uniform_real_distribution<T> dist(min, max);
-        return dist(gen);
-    }
 
     unsigned int bigToLittle_endian(const unsigned char* bytes);
 }
