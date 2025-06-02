@@ -1,3 +1,8 @@
-# Neural Network in C++ from scratch
+# A Machine Learning Library in C++ from scratch
 
-This is just an idea of me out of boredom. I'm gonna make a neural network to to recognize MNIST handwritten digit from scratch, just use OpenCV to visualize the image and no other purposes. But I'll wont stop at making a plain neural network for this particular MNIST but I'll make it as generic as possible so it will look like a library you can use to make one neural net for your own.
+I'm making a machine learning library from scratch in C++ without any dependency.
+
+# Features:
+    - Multi-dimensional tensor
+    - Matrix opearors overloading
+

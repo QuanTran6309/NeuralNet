@@ -7,6 +7,7 @@
 #include <type_traits>
 #include <memory>
 #include <vector>
+#include <deque>
 
 #include "utils.hpp"
 
@@ -22,6 +23,38 @@ class Tensor {
     static_assert(std::is_arithmetic<T>::value, "Tensor only takes numeric values");
 
 private:
+    /**
+     * The actual toString method. This method form the string of the 
+     * tensor to be printed on the console.
+     * 
+     * Magically somehow I implemented to run in linear time. Did not expect this.
+     * 
+     * Use recursion.
+     */
+    std::string toStringHelper(std::vector<unsigned int>::iterator itr, 
+                               unsigned int offset){
+        std::string buffer = "";
+        if (itr == this->dimensions.begin()){
+            buffer = std::to_string(this->tensor[offset]);
+            for (unsigned int i = 1; i < *itr; i++){
+                buffer += (", " + std::to_string(this->tensor[offset + i]));
+            }
+            return buffer;
+        }
+
+        std::vector<std::string> brac_buffer(*itr);
+        for (unsigned int i = 0; i < brac_buffer.size(); i++){
+            // What the fuck?
+            brac_buffer[i] = "[" + toStringHelper(itr - 1, i * std::accumulate(this->dimensions.begin(), itr, 1, std::multiplies<unsigned int>()) + offset) + "]";
+        }
+
+        buffer = brac_buffer[0];
+        for (unsigned int i = 1; i < brac_buffer.size(); i++){
+            buffer += (",\n" + brac_buffer[i]);
+        }
+
+        return buffer;
+    }
     
 protected:
     std::vector<unsigned int> dimensions;
@@ -158,7 +191,7 @@ public:
 
     // Get the total number of entries of this tensor, depending on the dimension size
     size_t getTotalEntries() const {
-        return std::accumulate(this->dimensions.begin(), this->dimensions.end(), 1, std::multiplies<unsigned int>());
+        return this->totalEntries;
     }
 
     // Iterator pattern : not really as safe as a true iterator.
@@ -331,6 +364,10 @@ public:
         return new_tensor;
     }
 
+    // Inspired by toString() in Java
+    std::string toString(){
+        return this->toStringHelper(this->dimensions.end() - 1, 0);
+    }
 };
 
 

@@ -82,7 +82,7 @@ public:
             for (unsigned int col = 0; col < otherDim[0]; col++){
                 T buffer = 0;
                 for (unsigned int itr = 0; itr < thisDim[0]; itr++){
-                    buffer += (thisPtr[row * thisDim[0] + itr] * otherPtr[itr * thisDim[0] + col]);
+                    buffer += (thisPtr[row * thisDim[0] + itr] * otherPtr[itr * otherDim[0] + col]);
                 }
 
                 newMatrixPtr[row * otherDim[0] + col] = buffer;
@@ -114,6 +114,8 @@ public:
 
         return Matrix<T>(newMatrix);
     }
+
+    
 };
 
 

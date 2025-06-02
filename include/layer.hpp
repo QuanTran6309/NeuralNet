@@ -19,12 +19,11 @@ public:
     Layer() = default;
 
     Layer(unsigned int in_nodes, unsigned int out_nodes, float(* actFunc)(float) = nullptr){
-        this->inLayer = Matrix<float>({1, in_nodes});
-        this->outLayer = Matrix<float>({1, out_nodes});
-        this->weights = Matrix<float>({in_nodes, out_nodes});
-        this->biases = Matrix<float>({1, out_nodes});
-
-
+        this->inLayer = Matrix<float>(1, in_nodes);
+        this->outLayer = Matrix<float>(1, out_nodes);
+        this->weights = Matrix<float>(in_nodes, out_nodes);
+        this->biases = Matrix<float>(1, out_nodes);
+        
         // Activation function
         this->actFunc = actFunc;
     }
@@ -60,6 +59,7 @@ public:
         }
         this->inLayer = prevOut;
 
+        
         // These operators are already overloaded.
         // Matrices opeartions.
         this->outLayer = this->weights * this->inLayer + this->biases;
