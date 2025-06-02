@@ -18,6 +18,10 @@ OPENCV=$(shell pkg-config --cflags --libs opencv4)
 
 all: main
 
+clean:
+	rm -rf $(BUILD_DIR) main
+
+
 main: $(INCLUDE_OBJ) $(DATA_OBJ) main.cpp
 	$(CXX) $(CXXFLAGS) $(DEBUGFLAG) $^ -o main
 

@@ -16,7 +16,7 @@ public:
     Matrix(unsigned int columns, unsigned int rows) : Tensor<T>({columns, rows}){}
     
     // Init a matrix from nested vector
-    Matrix(const std::vector<std::vector<T>>& src_mat) : Tensor<T>({src_mat[0].size(), src_mat.size()}){
+    Matrix(const std::vector<std::vector<T>>& src_mat) : Tensor<T>({(unsigned int)src_mat[0].size(), (unsigned int)src_mat.size()}){
         for (unsigned int i = 1; i < src_mat.size(); i++){
             if (src_mat[i].size() != src_mat[0].size()){
                 throw std::runtime_error("Matrix size is not legit");
@@ -32,18 +32,17 @@ public:
         }
     }
 
-    Matrix(T *src_tensor, const std::vector<unsigned int>& dimensions) : Tensor<T>(src_tensor, dimensions){
+    Matrix(const T *src_tensor, const std::vector<unsigned int>& dimensions) : Tensor<T>(src_tensor, dimensions){
         if (dimensions.size() > 2){
             throw std::runtime_error("Matrix is not legit");
         }
     }
 
     // Init a matrix from given Tensor
-    Matrix(const Tensor<T>& tensor) : Tensor<T>(tensor.getDim()){
+    Matrix(const Tensor<T>& tensor) : Tensor<T>(tensor.begin(), tensor.getDim()){
         if (tensor.getDim().size() > 2){
-            throw std::runtime_error("Matrix size is invalue");
+            throw std::runtime_error("Matrix size is not legit");
         }
-        std::copy(tensor.begin(), tensor.end(), this->getTensorPtr().get());
     }
 
     // Compatible with different primitive data type
@@ -52,7 +51,6 @@ public:
         if (other.getDim().size() > 2){
             throw std::runtime_error("Matrix size is invalid");
         }
-
         for (unsigned int i = 0; i < this->totalEntries; i++){
             this->tensor[i] = static_cast<T> (*(other.begin() + i));
         }
@@ -93,14 +91,15 @@ public:
 
     Matrix<T> operator+(const Matrix<T>& other) const {
         Tensor<T> result = Tensor<T>::operator+(other);
-        return Matrix<T>(result);
+        return Matrix<T>(result.begin(), result.getDim());
     }
 
     Matrix<T> operator-(const Matrix<T>& other) const {
         Tensor<T> result = Tensor<T>::operator-(other);
-        return Matrix<T>(result);
+        return Matrix<T>(result.begin(), result.getDim());
     }
 
+    // Unary minus operator
     Matrix<T> operator-() const {
         Tensor<T> newMatrix(this->getDim());
 
@@ -112,7 +111,7 @@ public:
             newMatrixPtr[i] = thisPtr[i];
         }
 
-        return Matrix<T>(newMatrix);
+        return Matrix<T>(newMatrix.begin(), newMatrix.getDim());
     }
 
     

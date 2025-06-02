@@ -1,4 +1,5 @@
 #include <fstream>
+#include <cstdint>
 #include "tensor.hpp"
 #include "matrix.hpp"
 #include "utils.hpp"
@@ -42,7 +43,7 @@ public:
     // Get the total number of pixels per image
     unsigned int getTotalPixelsPerImage();
 
-    Matrix<unsigned int> getImage(unsigned int index);
+    Matrix<uint8_t> getImage(unsigned int index);
 };
 
 

@@ -70,6 +70,14 @@ public:
         }
     }
 
+    Matrix<float> getWeights(){
+        return this->weights;
+    }
+
+    Matrix<float> getInLayer(){
+        return this->inLayer;
+    }
+
     Matrix<float> prevOut(){
         return this->outLayer;
     }

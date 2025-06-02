@@ -46,7 +46,7 @@ unsigned int MNIST::getTotalPixelsPerImage(){
 }
 
 // Get image by index
-Matrix<unsigned int> MNIST::getImage(unsigned int index){
+Matrix<uint8_t> MNIST::getImage(unsigned int index){
     if (index >= this->total){
         throw std::runtime_error("Index out of bound");
     }
@@ -56,11 +56,11 @@ Matrix<unsigned int> MNIST::getImage(unsigned int index){
 
     // Read the entire image into buffer.
     // Doing this can reduce File I/O
-    unsigned int buffer[this->npSize];
-    this->srcFile.read((char *)buffer, this->npSize);
-    
+    uint8_t buffer[this->npSize];
+    this->srcFile.read(reinterpret_cast<char *>(buffer), this->npSize);
+
     // Form tensor : matrix
-    return Matrix<unsigned int>(buffer, {this->npWidth, this->npHeight});
+    return Matrix<uint8_t>(buffer, {this->npWidth, this->npHeight});
 }
 
 

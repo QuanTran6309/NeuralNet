@@ -37,7 +37,7 @@ private:
         if (itr == this->dimensions.begin()){
             buffer = std::to_string(this->tensor[offset]);
             for (unsigned int i = 1; i < *itr; i++){
-                buffer += (", " + std::to_string(this->tensor[offset + i]));
+                buffer += (", " + std::to_string(static_cast<T>(this->tensor[offset + i])));
             }
             return buffer;
         }
@@ -116,12 +116,16 @@ public:
 
     // Construct a tensor from another tensor (vector form)
     Tensor (std::vector<T> src_tensor, const std::vector<unsigned int>& dimensions){
+        this->totalEntries = std::accumulate(this->dimensions.begin(), this->dimensions.end(), 1, std::multiplies<unsigned int>());
+        if (src_tensor.size() != this->totalEntries){
+            throw std::runtime_error("The dimension and src_tensor are mismatch");
+        }
+
         this->tensor = std::shared_ptr<T[]>(new T[src_tensor.size()], std::default_delete<T[]>());
         for (unsigned int i = 0; i < src_tensor.size(); i++){
             this->tensor[i] = src_tensor[i];
         }
         this->dimensions = dimensions;
-        this->totalEntries = std::accumulate(this->dimensions.begin(), this->dimensions.end(), 1, std::multiplies<unsigned int>());
     }
 
     
