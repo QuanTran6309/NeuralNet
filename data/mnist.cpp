@@ -62,6 +62,4 @@ Matrix<uint8_t> MNIST::getImage(unsigned int index){
     // Form tensor : matrix
     return Matrix<uint8_t>(buffer, {this->npWidth, this->npHeight});
 }
-
-
 }

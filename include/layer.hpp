@@ -38,7 +38,7 @@ public:
 
         // Assign random values to the buffer
         for (unsigned int i = 0; i < weightsEntries; i++){
-            weightsBuf[i] = Utils::getIntRandom(0, 100);
+            weightsBuf[i] = Utils::getRealRandom(-100, 100);
             if (i < biasesEntries){
                 biasesBuf[i] = Utils::getRealRandom(-100, 100);
             }
@@ -72,6 +72,10 @@ public:
 
     Matrix<float> getWeights(){
         return this->weights;
+    }
+
+    Matrix<float> getBiases(){
+        return this->biases;
     }
 
     Matrix<float> getInLayer(){

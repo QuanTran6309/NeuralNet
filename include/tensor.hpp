@@ -215,7 +215,7 @@ public:
      * Set the entire tensor's entries from src_tensor
      * The number of entries of src_tensor must match with this tensor.
      */
-    void setTensor(T *src_tensor, size_t num_entries){
+    void setTensor(const T *src_tensor, size_t num_entries){
         if (num_entries != this->getTotalEntries()){
             throw std::runtime_error("src_tensor has different number of entries than this tensor");
         }

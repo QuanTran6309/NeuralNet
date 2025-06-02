@@ -13,9 +13,9 @@ public:
     Model(const std::vector<Layer>& network, bool is_randomInit = true){
         this->layers = network;
         if (is_randomInit){
-            for (Layer layer : this->layers){
-                layer.randomlyInit();
-            }   
+            for (unsigned int i = 0; i < this->layers.size(); i++){
+                this->layers[i].randomlyInit();
+            }
         }
     }
 
@@ -26,7 +26,7 @@ public:
         }
     }
     Matrix<float> getLayer(unsigned int i){
-        return this->layers[i].getInLayer();
+        return this->layers[i].getBiases();
     }
 
     Matrix<float> outLayer(){
@@ -44,12 +44,12 @@ int main(void){
         Layer(400, 10, ActFunc::Relu)
     });
     
-    
     Matrix<uint8_t> image = mnist.getImage(0);
-    std::cout << image.toString() << std::endl;
     image.reShape({1, mnist.getTotalPixelsPerImage()});
     model.forward(image);
     
+
+    std::cout << model.outLayer().toString() << std::endl;
 
     
 
