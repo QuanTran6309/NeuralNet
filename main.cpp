@@ -37,7 +37,7 @@ public:
 int main(void){
     DataEngine::MNIST mnist("MNIST/train/images");
 
-
+    /*
     Model model({
         Layer(mnist.getTotalPixelsPerImage(), 500, ActFunc::Relu),
         Layer(500, 400, ActFunc::Relu),
@@ -50,8 +50,26 @@ int main(void){
     
 
     std::cout << model.outLayer().toString() << std::endl;
+    */
+    
+    Matrix<int> matrix1({
+        {0, 1, 2, 3},
+        {4, 5, 6, 7},
+        {8, 9, 5, 6}
+    });
+
+    Matrix<int> matrix2({
+        {0, 1, 2, 3},
+        {4, 5, 6, 7},
+        {8, 9, 5, 6},
+        {8, 9, 5, 6}
+    });
+
+    Matrix<int> matrix = matrix1 * matrix2;
 
     
+
+    std::cout << matrix.toString() << std::endl;
 
     return 0;
 }

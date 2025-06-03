@@ -28,7 +28,6 @@ public:
         this->actFunc = actFunc;
     }
 
-    
     // Randomly assign value to all entries of the tensor.
     void randomlyInit(){
         unsigned int weightsEntries = this->weights.getTotalEntries();
@@ -59,14 +58,13 @@ public:
         }
         this->inLayer = prevOut;
 
-        
         // These operators are already overloaded.
         // Matrices opeartions.
         this->outLayer = this->weights * this->inLayer + this->biases;
         
         // Apply activation function to all nodes on outLayer
         for (unsigned int i = 0; i < this->outLayer.getTotalEntries(); i++){
-            this->outLayer.setEntry({0, i}, this->actFunc(this->outLayer.getEntry({0, i})));
+            this->outLayer({0, i}) = this->actFunc(this->outLayer({0, i}));
         }
     }
 

@@ -61,16 +61,6 @@ protected:
     std::shared_ptr<T[]> tensor;
     unsigned int totalEntries;
 
-    /**
-     * Get a direct access modifier of the tensor.
-     * 
-     * Must be careful with this because any changes to the returned pointer 
-     * can affect the original value of the tensor.
-     */
-    std::shared_ptr<T[]> getTensorPtr(){
-        return this->tensor;
-    }
-
     // Translate the position vector to the offset on the memory
     unsigned int posVecToIndex(const std::vector<unsigned int>& pos) const {
         if (pos.size() > this->dimensions.size() || pos.size() == 0){
@@ -227,28 +217,6 @@ public:
         std::copy(src_tensor, src_tensor + num_entries, this->tensor.get());
     }
 
-    /**
-     * Set value for a single entry using a single index 
-     * This index must be the offset on the platten tensor
-     */
-    void setEntry(unsigned int index, T value){
-        if (index >= this->getTotalEntries()){
-            throw std::runtime_error("Index out of bound");
-        }
-        this->tensor[index] = value;
-    }
-
-    /**
-     * Set value for a single entry using vector
-     * 
-     * The vector must reflect the position of the entry.
-     * The number of elements of the position vector cannot exceed the number
-     * of elements of the tensor's dimension.
-     */
-    void setEntry(const std::vector<unsigned int>& pos, T value){
-        unsigned int index = this->posVecToIndex(pos);
-        this->tensor[index] = value;
-    }
 
     /**
      * Reset the dimension for the Tensor.
@@ -264,11 +232,6 @@ public:
             throw std::runtime_error("New dimension is invalid");
         }
         this->dimensions = newDim;
-    }
-    
-    T getEntry(const std::vector<unsigned int>& pos) const{
-        unsigned int index = this->posVecToIndex(pos);
-        return this->tensor[index];
     }
     
     // Get just a portion of a tensor,
