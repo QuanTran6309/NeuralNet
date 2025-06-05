@@ -1,91 +1,35 @@
 #ifndef LAYER 
 #define LAYER
 
-
+#include <type_traits>
 #include "matrix.hpp"
-#include "utils.hpp"
-#include <vector>
 
+template<typename T>
+struct Layer{
+    static_assert(std::is_arithmetic<T>::value, "Template parameter must be a primitive type");
+    
+    unsigned int in_nodes;
+    unsigned int out_nodes;
+    // Function pointer to activation function in /include/actfunc.hpp
+    // Or any function that return a numeric value
+    T (* actFunc)(T);
+    // Weights matrix
+    Matrix<T> weight;
+    // Bias matrix : a column vector
+    Matrix<T> bias;
+    // Output matrix, technically a column vector
+    Matrix<T> output;
 
-class Layer{
-
-private:
-    Matrix<float> inLayer;
-    Matrix<float> outLayer;
-    Matrix<float> weights;
-    Matrix<float> biases;
-    float (* actFunc)(float); // Function pointer to activation function in /include/actfunc.hpp
-public:
-    Layer() = default;
-
-    Layer(unsigned int in_nodes, unsigned int out_nodes, float(* actFunc)(float) = nullptr){
-        this->inLayer = Matrix<float>(1, in_nodes);
-        this->outLayer = Matrix<float>(1, out_nodes);
-        this->weights = Matrix<float>(in_nodes, out_nodes);
-        this->biases = Matrix<float>(1, out_nodes);
-        
-        // Activation function
+    Layer(unsigned int in_nodes, unsigned int out_nodes, T (* actFunc)(T) = nullptr){
+        if (in_nodes == 0 || out_nodes == 0){
+            throw std::runtime_error("The number of input and output nodes must be greater than 0");
+        }
+        this->weight = Matrix<T>(in_nodes, out_nodes);
+        this->bias = Matrix<T>(1, out_nodes);
+        this->output = Matrix<T>(1, out_nodes);
         this->actFunc = actFunc;
     }
-
-    // Randomly assign value to all entries of the tensor.
-    void randomlyInit(){
-        unsigned int weightsEntries = this->weights.getTotalEntries();
-        unsigned int biasesEntries = this->biases.getTotalEntries();
-        float *weightsBuf = new float[weightsEntries];
-        float *biasesBuf = new float[biasesEntries];
-
-        // Assign random values to the buffer
-        for (unsigned int i = 0; i < weightsEntries; i++){
-            weightsBuf[i] = Utils::getRealRandom(-100, 100);
-            if (i < biasesEntries){
-                biasesBuf[i] = Utils::getRealRandom(-100, 100);
-            }
-        }
-
-        // Set the Weights and Biases Matrices.
-        this->weights.setTensor(weightsBuf, weightsEntries);
-        this->biases.setTensor(biasesBuf, biasesEntries);
-
-        delete[] weightsBuf;
-        delete[] biasesBuf;
-    }
-
-    // Proceed the computation of weights and input tensor
-    void compute(const Matrix<float>prevOut){
-        if (prevOut.getDim() != this->inLayer.getDim()){
-            throw std::runtime_error("In and Out dimension mismatch");
-        }
-        this->inLayer = prevOut;
-
-        // These operators are already overloaded.
-        // Matrices opeartions.
-        this->outLayer = this->weights * this->inLayer + this->biases;
-        
-        // Apply activation function to all nodes on outLayer
-        for (unsigned int i = 0; i < this->outLayer.getTotalEntries(); i++){
-            this->outLayer({0, i}) = this->actFunc(this->outLayer({0, i}));
-        }
-    }
-
-    Matrix<float> getWeights(){
-        return this->weights;
-    }
-
-    Matrix<float> getBiases(){
-        return this->biases;
-    }
-
-    Matrix<float> getInLayer(){
-        return this->inLayer;
-    }
-
-    Matrix<float> prevOut(){
-        return this->outLayer;
-    }
 };
-
-
 
 #endif
 

@@ -57,9 +57,7 @@ private:
     }
     
 protected:
-    std::vector<unsigned int> dimensions;
-    std::shared_ptr<T[]> tensor;
-    unsigned int totalEntries;
+    
 
     // Translate the position vector to the offset on the memory
     unsigned int posVecToIndex(const std::vector<unsigned int>& pos) const {
@@ -80,6 +78,10 @@ protected:
         return index;
     }
 public:
+
+    std::vector<unsigned int> dimensions;
+    std::shared_ptr<T[]> tensor;
+    unsigned int totalEntries;
     
     // Virtual destructor for polymorphism
     virtual ~Tensor() = default;
@@ -173,8 +175,16 @@ public:
         return newTensor;
     }
 
-    // entry is vector indicating the position of the entry in the tensor user want to get
-    // The order of value in entry is from the least to most significant dimension.
+    /**
+     * Allowing people to use syntax like instanceOfTensor({0,1}) to access each entry
+     * 
+     * The order of value in entry is from the least to most significant dimension.
+     * 
+     * ALERT: if the entry is modified via this method like 
+     *                instanceOfTensor1 = instanceOfTensor2
+     *                instanceOfTensor1({8,9}) = 8;
+     * The instanceOfTensor2 is also modified because they use the same shared pointer.
+     */
     T& operator()(std::vector<unsigned int> posVec){
         return this->tensor[this->posVecToIndex(posVec)];
     }
@@ -182,7 +192,6 @@ public:
         return this->tensor[this->posVecToIndex(posVec)];
     }
     
-
     // Get the total number of entries of this tensor, depending on the dimension size
     size_t getTotalEntries() const {
         return this->totalEntries;
