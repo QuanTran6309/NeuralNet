@@ -230,9 +230,8 @@ public:
     /**
      * Reset the dimension for the Tensor.
      * 
-     * This does not change the relative position of each entry in the RAM but will change
-     * the way the tensor understand each entry. The total number of entries of the new dimension
-     * must be the same with the current total of entry.
+     * This does not change the relative position of each entry in the RAM but will change the way the tensor understand each entry. 
+     * The total number of entries of the new dimension must be the same with the current total of entry.
      * 
      * No entry will be lost after this operation.
      */

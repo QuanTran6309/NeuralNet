@@ -48,6 +48,8 @@ public:
         }
     }
 
+    unsigned int rows() const{ return this->dimensions[1]; }
+    unsigned int cols() const{ return this->dimensions[0]; }
 
     // CPU matrix cross product.
     Matrix<T> operator*(const Matrix<T>& other) const{

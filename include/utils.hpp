@@ -17,14 +17,14 @@ int getIntRandom(int min, int max);
 template<typename T>
 struct Randomizer{
     static_assert(std::is_arithmetic<T>::value, "Template parameter must be a primitive type");
+    T (* randFunc)(T, T);
     T max;
     T min;
-    T (* randFunc)(T, T);
+    Randomizer(T (* randFunc)(T, T), T max, T min) : randFunc(randFunc), max(max), min(min){}
     T generate(){
         return randFunc(min, max);
     }
 };
-
 
 unsigned int bigToLittle_endian(const unsigned char* bytes);
 }

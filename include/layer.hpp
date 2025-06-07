@@ -7,9 +7,7 @@
 template<typename T>
 struct Layer{
     static_assert(std::is_arithmetic<T>::value, "Template parameter must be a primitive type");
-    
-    unsigned int in_nodes;
-    unsigned int out_nodes;
+
     // Function pointer to activation function in /include/actfunc.hpp
     // Or any function that return a numeric value
     T (* actFunc)(T);
@@ -26,8 +24,14 @@ struct Layer{
         }
         this->weight = Matrix<T>(in_nodes, out_nodes);
         this->bias = Matrix<T>(1, out_nodes);
-        this->output = Matrix<T>(1, out_nodes);
         this->actFunc = actFunc;
+    }
+
+    unsigned int in_nodes() const {
+        return this->weight.cols();
+    }
+    unsigned int out_nodes() const {
+        return this->weight.rows();
     }
 };
 
