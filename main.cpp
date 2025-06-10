@@ -1,32 +1,14 @@
 
-#include "actfunc.hpp"
-#include "matrix.hpp"
-#include "data/mnist.hpp"
-#include "layer.hpp"
-#include "dense.hpp"
+#include "tensor.hpp"
 #include <iostream>
-#include "utils.hpp"
+    
+int main(){
+    float arr[] = {0, 1, 2, 3, 4, 5, 6, 7, 8};
+        Tensor<float> tensor(arr, {3, 1, 3});
+        
+        // Let say you want to access the entry at second column, first row, and third channel.
+        std::cout << tensor({1, 0, 2}) << std::endl;
+        
 
-
-int main(void){
-    DataEngine::MNIST mnist("MNIST/train/images");
-
-    Matrix<float> image = mnist.getImage(0);
-    image.reShape({1, 784});
-    Dense<float> model(
-        {
-            Layer<float>(784, 60, ActFunc::Relu),
-            Layer<float>(60, 10, ActFunc::Relu),
-            Layer<float>(10, 5, ActFunc::Relu)
-        }
-       // Utils::Randomizer<float>(Utils::getRealRandom, -100, 100)
-    );
-
-    model(image);
-
-    std::cout << model.getLayer(1).toString() << std::endl;
-
-
-    return 0;
+        return 0;
 }
-

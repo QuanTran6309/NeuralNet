@@ -108,6 +108,7 @@ public:
 
     // Construct a tensor from another tensor (vector form)
     Tensor (std::vector<T> src_tensor, const std::vector<unsigned int>& dimensions){
+        this->dimensions = dimensions;
         this->totalEntries = std::accumulate(this->dimensions.begin(), this->dimensions.end(), 1, std::multiplies<unsigned int>());
         if (src_tensor.size() != this->totalEntries){
             throw std::runtime_error("The dimension and src_tensor are mismatch");
@@ -117,10 +118,8 @@ public:
         for (unsigned int i = 0; i < src_tensor.size(); i++){
             this->tensor[i] = src_tensor[i];
         }
-        this->dimensions = dimensions;
     }
 
-    
     // Construct a tensor from another tensor (array form)
     Tensor (const T *src_tensor, const std::vector<unsigned int>& dimensions){
         this->dimensions = dimensions;
