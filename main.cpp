@@ -1,14 +1,28 @@
 
-#include "tensor.hpp"
+#include "algebra/tensor.cuh"
 #include <iostream>
     
 int main(){
-    float arr[] = {0, 1, 2, 3, 4, 5, 6, 7, 8};
-        Tensor<float> tensor(arr, {3, 1, 3});
-        
-        // Let say you want to access the entry at second column, first row, and third channel.
-        std::cout << tensor({1, 0, 2}) << std::endl;
-        
+    
+    /*
+    const int N = 1000;
+    float A[N], B[N], C[N];
 
-        return 0;
+    for (int i = 0; i < N; ++i) {
+        A[i] = i;
+        B[i] = 2 * i;
+    }
+    vectorAdd(A, B, C, N);
+    std::cout << "C[0] = " << C[0] << ", C[999] = " << C[999] << std::endl;
+    */
+
+    int src1[] = {1, 2, 3, 4, 5, 6};
+    int src2[] = {3, 4, 5, 6, 7, 8};
+    Tensor tensor1(src1, {6, 1}, INT, true);
+    Tensor tensor2(src2, {6, 1}, INT, true);
+
+    Tensor tensor3 = tensor1 + tensor2;
+    tensor3.printTensor();
+
+    return 0;
 }

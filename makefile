@@ -31,3 +31,8 @@ debug: $(INCLUDE_OBJ) $(DATA_OBJ) main.cpp
 $(BUILD_DIR)/%.o: %.cpp
 	@mkdir -p $(dir $@)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
+
+
+cuda: 
+	nvcc -fPIC -shared include/algebra/tensor.cu -o libtensor.so
+	g++ main.cpp -L. -ltensor -I include/ -o main

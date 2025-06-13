@@ -8,20 +8,14 @@
 #include <memory>
 #include <vector>
 #include <deque>
-
-#include "utils.hpp"
-
-
+#include <iostream>
 
 struct Range {
     unsigned int start; // inlcusive
     unsigned int end;   // inclusive
 };
 
-template<typename T>
 class Tensor {
-    static_assert(std::is_arithmetic<T>::value, "Tensor only takes numeric values");
-
 private:
     /**
      * The actual toString method. This method form the string of the 
@@ -57,7 +51,11 @@ private:
     }
     
 protected:
+    std::vector<unsigned int> dimensions;
+    unsigned int totalEntries;
+    std::shared_ptr<T[]> tensor;
     
+
 
     // Translate the position vector to the offset on the memory
     unsigned int posVecToIndex(const std::vector<unsigned int>& pos) const {
@@ -77,12 +75,8 @@ protected:
 
         return index;
     }
-public:
 
-    std::vector<unsigned int> dimensions;
-    std::shared_ptr<T[]> tensor;
-    unsigned int totalEntries;
-    
+public:
     // Virtual destructor for polymorphism
     virtual ~Tensor() = default;
     Tensor() = default;
@@ -321,7 +315,7 @@ public:
             
             // Process the indices
             if (indices.size() != 0){
-                indices = Utils::sumOfCartesianProd({indices, index});
+                //indices = Utils::sumOfCartesianProd({indices, index});
             }
             else{
                 indices = index;
@@ -341,6 +335,43 @@ public:
     // Inspired by toString() in Java
     std::string toString(){
         return this->toStringHelper(this->dimensions.end() - 1, 0);
+    }
+
+
+
+
+    void trial(){
+        T h_tensor1[] = {0, 1, 2, 3, 4};
+        T h_tensor2[] = {5, 6, 7, 8, 9};
+        T *h_tensor = new T[5];
+
+        T *d_tensor1;
+        T *d_tensor2;
+        T *d_tensor;
+
+        size_t size = sizeof(T) * 5;
+
+        cudaMalloc(&d_tensor1, size);
+        cudaMalloc(&d_tensor2, size);
+        cudaMalloc(&d_tensor, size);
+
+        cudaMemcpy(d_tensor1, h_tensor1, size, cudaMemcpyHostToDevice);
+        cudaMemcpy(d_tensor2, h_tensor2, size, cudaMemcpyHostToDevice);
+
+        addTensor<<<1, 5>>>(d_tensor1, d_tensor2, d_tensor, 5);
+
+        cudaMemcpy(h_tensor, d_tensor, size, cudaMemcpyDeviceToHost);
+
+        cudaFree(d_tensor1);
+        cudaFree(d_tensor2);
+        cudaFree(d_tensor);
+
+        for (int i = 0; i < 5; i++){
+            std::cout << h_tensor[i] << " ";
+        }
+        std::cout << std::endl;
+        
+        delete[] h_tensor;
     }
 };
 
