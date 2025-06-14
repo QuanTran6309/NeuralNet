@@ -4,29 +4,33 @@
 
 #include <stdexcept>
 #include <vector>
+#include "types.hpp"
+
+namespace IdioticML{
+
 
 struct Range {
     unsigned int start; // inlcusive
     unsigned int end;   // inclusive
 };
 
-enum TensorType {
-    FLOAT,
-    DOUBLE,
-    INT,
-    UINT
-};
-
 class Tensor {
 private:
+    // Allocate space for tensor, where it will be allocated depends on member is_onCUDA.
+    // If the src_ptr is provided, the memory is also copy to the tensor.
+    void allocate(const void *src_ptr = nullptr);
 
 protected:
     std::vector<unsigned int> dimensions;
+
     // This can be on either HOST or DEVICE (GPU) depending on the parameters passed to constructor
     void *tensor; 
     unsigned int totalEntries;
     TensorType type;
     bool is_onCUDA = false;
+
+    // The number of threads per block when using CUDA
+    static const unsigned int threadsPerBlock = 512;
 
 public:
     
@@ -34,27 +38,25 @@ public:
     virtual ~Tensor();
     Tensor() = default;
 
-    // Just set the dimension and size without assigning any entries
-    Tensor(const std::vector<unsigned int>& dimensions, 
-           TensorType type,
-           bool to_cuda = false);
-
-    // Set the tensor's entries from src_tensor and also set the dimensions
-    Tensor (const void *src_tensor, 
-            const std::vector<unsigned int>& dimensions, 
+    /**
+     * Init a tensor using dimensions.
+     * 
+     * If the src_tensor is provided, 
+     */
+    Tensor (const std::vector<unsigned int>& dimensions, 
             TensorType type,
+            const void *src_tensor = nullptr,
             bool to_cuda = false);
 
     void printTensor();
+
+    // When performing tensor's arithmetic operations, both tensors must be on the same device,
+    // both on GPU or both on CPU.
 
     // Overload operator +
     Tensor operator+(const Tensor& other) const;
 };
 
-
-
-void vectorAdd(const float* A, const float* B, float* C, int N);
-
-
+}
 
 #endif

@@ -7,44 +7,22 @@
 
 #include "tensor.cuh"
 
-std::unordered_map<TensorType, unsigned int> MemSizeMap = {
-    {FLOAT, 4},
-    {DOUBLE, 8},
-    {INT, 4},
-    {UINT, 4}
-};
+namespace IdioticML {
 
 
-__global__ void vectorAddKernel(const int* A, const int* B, int* C, int N) {
-    int i = blockIdx.x * blockDim.x + threadIdx.x;
-    if (i < N) {
-        C[i] = A[i] + B[i];
+// This is a generic tensor addition kernel so we have to consider the tensor as a 1D array
+template<typename T>
+__global__
+void tensorAddKernel(const T *tensor1, 
+                     const T *tensor2, 
+                     T *tensor, 
+                     unsigned int totalEntries)
+{
+    unsigned int i = blockDim.x * blockIdx.x + threadIdx.x;
+    if (i < N){
+        tensor[i] = tensor1[i] + tensor2[i];
     }
 }
-/*
-void vectorAdd(const float* A, const float* B, float* C, int N) {
-    float *d_A, *d_B, *d_C;
-    size_t size = N * sizeof(float);
-
-    cudaMalloc(&d_A, size);
-    cudaMalloc(&d_B, size);
-    cudaMalloc(&d_C, size);
-
-    cudaMemcpy(d_A, A, size, cudaMemcpyHostToDevice);
-    cudaMemcpy(d_B, B, size, cudaMemcpyHostToDevice);
-
-    int threadsPerBlock = 256;
-    int blocksPerGrid = (N + threadsPerBlock - 1) / threadsPerBlock;
-
-    vectorAddKernel<<<blocksPerGrid, threadsPerBlock>>>(d_A, d_B, d_C, N);
-
-    cudaMemcpy(C, d_C, size, cudaMemcpyDeviceToHost);
-
-    cudaFree(d_A);
-    cudaFree(d_B);
-    cudaFree(d_C);
-}
-    */
 
 
 Tensor::~Tensor(){
@@ -56,45 +34,34 @@ Tensor::~Tensor(){
     }
 }
 
-Tensor::Tensor(const std::vector<unsigned int>& dimensions, 
-               TensorType type,
-                bool to_cuda)
-{
-    if (!(MemSizeMap.find(type) != MemSizeMap.end())){
-        throw std::runtime_error("Unsupported type");
-    }
-    if (dimensions.size() == 0){
-        throw std::runtime_error("The dimensions cannot be empty");
-    }
 
-    this->dimensions = dimensions;
-    this->totalEntries = std::accumulate(this->dimensions.begin(), this->dimensions.end(), 1, std::multiplies<unsigned int>());
-    this->type = type;
-    this->is_onCUDA = to_cuda;
+void Tensor::allocate(const void *src_ptr){
+    // The number of bytes of the tensor, not just the number of entries 
+    size_t size = TensorTypeSize.at(this->type) * this->totalEntries;
 
-    if (this->totalEntries == 0){
-        throw std::runtime_error("Dimension of size 0 is not allowed");
-    }
-
-    size_t size = MemSizeMap[this->type] * this->totalEntries;
     // Allocate and Assign value for tensor
     if (this->is_onCUDA){
+        // for GPU
         cudaMalloc(&this->tensor, size);
+        if (src_ptr != nullptr){
+            cudaMemcpy(this->tensor, src_ptr, size, cudaMemcpyHostToDevice);
+        }
     }
     else {
-        this->tensor = this->tensor = malloc(MemSizeMap[this->type] * this->totalEntries);
+        // for CPU
+        this->tensor = this->tensor = malloc(size);
+        if (src_ptr != nullptr){
+            memcpy(this->tensor, src_ptr, size);
+        }
     }
 }
 
 
-Tensor::Tensor (const void *src_tensor, 
-                const std::vector<unsigned int>& dimensions, 
+Tensor::Tensor (const std::vector<unsigned int>& dimensions, 
                 TensorType type, 
+                const void *src_tensor,
                 bool to_cuda)
 {
-    if (!(MemSizeMap.find(type) != MemSizeMap.end())){
-        throw std::runtime_error("Unsupported type");
-    }
     if (dimensions.size() == 0){
         throw std::runtime_error("The dimensions cannot be empty");
     }
@@ -108,22 +75,13 @@ Tensor::Tensor (const void *src_tensor,
         throw std::runtime_error("Dimension of size 0 is not allowed");
     }
 
-    size_t size = MemSizeMap[this->type] * this->totalEntries;
-
-    // Allocate and Assign value for tensor
-    if (this->is_onCUDA){
-        cudaMalloc(&this->tensor, size);
-        cudaMemcpy(this->tensor, src_tensor, size, cudaMemcpyHostToDevice);
-    }
-    else {
-        this->tensor = this->tensor = malloc(size);
-        memcpy(this->tensor, src_tensor, size);
-    }
+    // Allocate and copy data to tensor
+    this->allocate(src_tensor);
 }
 
 
 void Tensor::printTensor(){
-    size_t size = MemSizeMap[this->type] * this->totalEntries;
+    size_t size = TensorTypeSize.at(this->type) * this->totalEntries;
     void *buffer = malloc(size);
     
     cudaMemcpy(buffer, this->tensor, size, cudaMemcpyDeviceToHost);
@@ -135,15 +93,49 @@ void Tensor::printTensor(){
 }
 
 
-Tensor Tensor::operator+(const Tensor& other) const {
+Tensor Tensor::operator+(const Tensor& other) const 
+{
+    if (this->is_onCUDA ^ other.is_onCUDA){
+        throw std::runtime_error("Both tensors must be on either CPU or GPU");
+    }
+
     // Create new tensor instance
-    Tensor newTensor(this->dimensions, this->type, this->is_onCUDA);
+    Tensor newTensor(this->dimensions, this->type, nullptr, this->is_onCUDA);
     
-    vectorAddKernel<<<1, this->totalEntries>>>((int *)this->tensor, (int *)other.tensor, (int *)newTensor.tensor, (int)this->totalEntries);
+    // The number of threads per block is set to a static number
+    // So just need to calculate the number of blocks.
+    int numBlocks = this->totalEntries / Tensor::threadsPerBlock + 1;
+
+    // Launch the kernel
+    switch (this->type)
+    {
+    case TensorType::INT:
+        tensorAddKernel<int><<< numBlocks, Tensor::threadsPerBlock >>>((int *)this->tensor, 
+                                                                       (int *)other.tensor, 
+                                                                       (int *)newTensor.tensor, 
+                                                                       this->totalEntries);
+        break;
+    case TensorType::FLOAT:
+        tensorAddKernel<float><<< numBlocks, Tensor::threadsPerBlock >>>((float *)this->tensor, 
+                                                                         (float *)other.tensor, 
+                                                                         (float *)newTensor.tensor, 
+                                                                         this->totalEntries);
+        break;
+    case TensorType::INT:
+        tensorAddKernel<int><<< numBlocks, Tensor::threadsPerBlock >>>((int *)this->tensor, 
+                                                                       (int *)other.tensor, 
+                                                                       (int *)newTensor.tensor, 
+                                                                       this->totalEntries);
+        break;
+    default:
+        throw std::runtime_error("Addition operation does not support this data type");
+    }
+    
     cudaDeviceSynchronize();
     
     return newTensor;
 }
 
+}
 
 
