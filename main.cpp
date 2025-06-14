@@ -2,6 +2,7 @@
 #include "algebra/tensor.cuh"
 #include <iostream>
     
+using namespace IdioticML;
 int main(){
     
     /*
@@ -18,8 +19,8 @@ int main(){
 
     int src1[] = {1, 2, 3, 4, 5, 6};
     int src2[] = {3, 4, 5, 6, 7, 8};
-    Tensor tensor1(src1, {6, 1}, INT, true);
-    Tensor tensor2(src2, {6, 1}, INT, true);
+    Tensor tensor1({6, 1}, INT, src1, true);
+    Tensor tensor2({6, 1}, INT, src2, true);
 
     Tensor tensor3 = tensor1 + tensor2;
     tensor3.printTensor();

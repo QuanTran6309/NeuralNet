@@ -2,9 +2,10 @@
 #ifndef TENSOR
 #define TENSOR
 
-#include <stdexcept>
+
 #include <vector>
 #include "types.hpp"
+
 
 namespace IdioticML{
 
@@ -27,7 +28,6 @@ protected:
     void *tensor; 
     unsigned int totalEntries;
     TensorType type;
-    bool is_onCUDA = false;
 
     // The number of threads per block when using CUDA
     static const unsigned int threadsPerBlock = 512;
@@ -45,8 +45,7 @@ public:
      */
     Tensor (const std::vector<unsigned int>& dimensions, 
             TensorType type,
-            const void *src_tensor = nullptr,
-            bool to_cuda = false);
+            const void *src_tensor = nullptr);
 
     void printTensor();
 
