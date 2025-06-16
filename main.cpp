@@ -1,29 +1,29 @@
 
-#include "algebra/tensor.cuh"
-#include <iostream>
-    
-using namespace IdioticML;
-int main(){
-    
-    /*
-    const int N = 1000;
-    float A[N], B[N], C[N];
 
-    for (int i = 0; i < N; ++i) {
-        A[i] = i;
-        B[i] = 2 * i;
-    }
-    vectorAdd(A, B, C, N);
-    std::cout << "C[0] = " << C[0] << ", C[999] = " << C[999] << std::endl;
-    */
+#include "algebra/tensor.hpp"
+
+using namespace IdioticML;
+
+void Nothing(Tensor<int> tensor){
+    Tensor<int> buffer = tensor;
+}
+
+
+int main(){
 
     int src1[] = {1, 2, 3, 4, 5, 6};
     int src2[] = {3, 4, 5, 6, 7, 8};
-    Tensor tensor1({6, 1}, INT, src1, true);
-    Tensor tensor2({6, 1}, INT, src2, true);
 
-    Tensor tensor3 = tensor1 + tensor2;
-    tensor3.printTensor();
+    Tensor<int> matrix1({3, 2}, src1);    
+    Tensor<int> matrix2({3, 2}, src2);
+    
+    Tensor<int> tensor = matrix1 + matrix2;
 
+    std::cout << tensor.toString() << std::endl;
+    
+    Nothing(tensor);
+
+    std::cout << tensor.toString() << std::endl;
+    
     return 0;
 }

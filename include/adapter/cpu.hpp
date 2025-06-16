@@ -1,19 +1,14 @@
-
-#ifndef CUDA_WRAP
-#define CUDA_WRAP
+#ifndef CPU_WRAP
+#define CPU_WRAP
 
 #include "types.hpp"
 
 namespace IdioticML {
 
 
-class CUDA {
+class CPU {
 private:
-    // The number of threads per block when using CUDA
-    static const unsigned int threadsPerBlock = 512;
-
 public:
-
     /**
      * Perform tensor addition 
      */

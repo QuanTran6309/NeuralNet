@@ -2,21 +2,41 @@
 #ifndef TENSOR
 #define TENSOR
 
-#include <stdexcept>
-#include <random>  
-#include <type_traits>
-#include <memory>
+
 #include <vector>
-#include <deque>
+#include <memory>
+#include <string>
+#include <numeric>
 #include <iostream>
+#include <stdexcept>
+
+#include "adapter/cuda.cuh"
+#include "env.h"
+#include "types.hpp"
+
+
+namespace IdioticML{
 
 struct Range {
     unsigned int start; // inlcusive
     unsigned int end;   // inclusive
 };
 
+template<typename T>
 class Tensor {
 private:
+    // Allocate space for tensor
+    // If the src_ptr is provided, the memory is also copy to the tensor.
+    void allocate(const T *src_ptr = nullptr)
+    {
+        this->tensor = std::shared_ptr<T[]>(new T[this->totalEntries], std::default_delete<T[]>());
+
+        // If the src_ptr is provided, copy value to this tensor.
+        if (src_ptr != nullptr){
+            std::copy(src_ptr, src_ptr + this->totalEntries, this->tensor.get());
+        }
+    }
+
     /**
      * The actual toString method. This method form the string of the 
      * tensor to be printed on the console.
@@ -26,7 +46,8 @@ private:
      * Use recursion.
      */
     std::string toStringHelper(std::vector<unsigned int>::iterator itr, 
-                               unsigned int offset){
+                               unsigned int offset)
+    {
         std::string buffer = "";
         if (itr == this->dimensions.begin()){
             buffer = std::to_string(this->tensor[offset]);
@@ -49,16 +70,10 @@ private:
 
         return buffer;
     }
-    
-protected:
-    std::vector<unsigned int> dimensions;
-    unsigned int totalEntries;
-    std::shared_ptr<T[]> tensor;
-    
-
 
     // Translate the position vector to the offset on the memory
-    unsigned int posVecToIndex(const std::vector<unsigned int>& pos) const {
+    unsigned int posVecToIndex(const std::vector<unsigned int>& pos) const
+    {
         if (pos.size() > this->dimensions.size() || pos.size() == 0){
             throw std::runtime_error("Position vector is invalid");
         }
@@ -68,157 +83,94 @@ protected:
             index += (pos[i] * prevSize);
             prevSize *= this->dimensions[i];
         }
-
         if (index >= this->totalEntries){
             throw std::runtime_error("Index out of bound");
         }
-
         return index;
     }
+
+protected:
+    /**
+     * Keeps track of the dimensions of the tensor.
+     * 
+     * The index of each element tells the order of dimension.
+     * 0 => first dimension
+     * 1 => second dimension
+     * 2 => third dimension
+     * ... so on
+     */
+    std::vector<unsigned int> dimensions;
+
+    /**
+     * Keep track of the tensor inside RAM.
+     */
+    std::shared_ptr<T[]> tensor; 
+
+    /**
+     * The total number of entries this tensor has.
+     * 
+     * This member does not tell anything about the dimensions or placees of the entries,
+     * just the total number of entries.
+     */
+    size_t totalEntries;
+
+    /**
+     * Tell if the tensor has a pointer on the GPU or not
+     * 
+     * When a neural network is being train, it is more ideal to keep the tensor on CUDA rather
+     * than keep moving between CPU and GPU.
+     */
+    bool is_onCUDA;
 
 public:
     // Virtual destructor for polymorphism
     virtual ~Tensor() = default;
+
     Tensor() = default;
 
     /**
-     * Init a Tensor by size, randomly assign each entries
+     * Init a tensor using dimensions.
      * 
-     * @param dim_size: the size of each dimension, the number at index 0 coresspond to the highest order of dimension.
-     * 
-     * Example: Tensor({3, 1, 2}) corresponds to a tensor with 3 dimension : 3 columns, 1 row, 2 layers
+     * If the src_tensor is provided, 
      */
-    Tensor(std::vector<unsigned int> dimensions){
+    Tensor (const std::vector<unsigned int>& dimensions, 
+            const T *src_tensor = nullptr)
+    {
         if (dimensions.size() == 0){
             throw std::runtime_error("The dimensions cannot be empty");
         }
+
         this->dimensions = dimensions;
         this->totalEntries = std::accumulate(this->dimensions.begin(), this->dimensions.end(), 1, std::multiplies<unsigned int>());
 
-        // Set the size for the tensor
-        this->tensor = std::shared_ptr<T[]>(new T[this->totalEntries], std::default_delete<T[]>());
+        if (this->totalEntries == 0){
+            throw std::runtime_error("Dimension of size 0 is not allowed");
+        }
+
+        // Allocate and copy data to tensor
+        this->allocate(src_tensor);
     }
-
-
-    // Construct a tensor from another tensor (vector form)
-    Tensor (std::vector<T> src_tensor, const std::vector<unsigned int>& dimensions){
-        this->dimensions = dimensions;
-        this->totalEntries = std::accumulate(this->dimensions.begin(), this->dimensions.end(), 1, std::multiplies<unsigned int>());
-        if (src_tensor.size() != this->totalEntries){
-            throw std::runtime_error("The dimension and src_tensor are mismatch");
-        }
-
-        this->tensor = std::shared_ptr<T[]>(new T[src_tensor.size()], std::default_delete<T[]>());
-        for (unsigned int i = 0; i < src_tensor.size(); i++){
-            this->tensor[i] = src_tensor[i];
-        }
-    }
-
-    // Construct a tensor from another tensor (array form)
-    Tensor (const T *src_tensor, const std::vector<unsigned int>& dimensions){
-        this->dimensions = dimensions;
-        this->totalEntries = std::accumulate(this->dimensions.begin(), this->dimensions.end(), 1, std::multiplies<unsigned int>());
-        this->tensor = std::shared_ptr<T[]>(new T[this->totalEntries], std::default_delete<T[]>());
-        std::copy(src_tensor, src_tensor + this->totalEntries, this->tensor.get());
-    }
-
-    // Honestly I just know how to implement tensor plus, minus
-    // I have not really found a way to implement tensor cross product.
-    Tensor<T> operator+(const Tensor<T>& other) const {
-        if (this->dimensions != other.getDim()){
-            throw std::runtime_error("Cannot perform addition on two different tensors");
-        }
-
-        // Create new tensor instance
-        Tensor<T> newTensor(this->dimensions);
-        
-        // Perform addition on this new tensor
-        for (unsigned int i = 0; i < other.totalEntries; i++){
-            newTensor.tensor[i] = this->tensor[i] + other.tensor[i];
-        }
-
-        return newTensor;
-    }
-
-    Tensor<T> operator-(const Tensor<T>& other) const {
-        if (this->getDim() != other.getDim()){
-            throw std::runtime_error("Cannot perform addition on two different tensors");
-        }
-
-        // Create new tensor instance
-        Tensor<T> newTensor(this->getDim());
-
-        // Perform subtraction on this new tensor
-        for (unsigned int i = 0; i < other.totalEntries; i++){
-            newTensor.tensor[i] = this->tensor[i] - other.tensor[i];
-        }
-
-        return newTensor;
-    }
-
-    Tensor<T> operator-() const {
-        // Create new tensor instance
-        Tensor<T> newTensor(this->getDim());
-
-        // Perform invertion on this new tensor
-        for (unsigned int i = 0; i < newTensor.getTotalEntries(); i++){
-            newTensor.tensor[i] = -this->tensor[i];
-        }
-
-        return newTensor;
-    }
+            
 
     /**
-     * Allowing people to use syntax like instanceOfTensor({0,1}) to access each entry
+     * Get the visualization of the tensor in a form of a raw string
      * 
-     * The order of value in entry is from the least to most significant dimension.
-     * 
-     * ALERT: if the entry is modified via this method like 
-     *                instanceOfTensor1 = instanceOfTensor2
-     *                instanceOfTensor1({8,9}) = 8;
-     * The instanceOfTensor2 is also modified because they use the same shared pointer.
+     * Inspired by Java's toString()
      */
-    T& operator()(std::vector<unsigned int> posVec){
-        return this->tensor[this->posVecToIndex(posVec)];
-    }
-    const T& operator()(std::vector<unsigned int> posVec) const{
-        return this->tensor[this->posVecToIndex(posVec)];
-    }
-    
-    // Get the total number of entries of this tensor, depending on the dimension size
-    size_t getTotalEntries() const {
-        return this->totalEntries;
+    std::string toString()
+    {
+        return this->toStringHelper(this->dimensions.end() - 1, 0);
     }
 
-    // Iterator pattern : not really as safe as a true iterator.
-    const T* begin() const{
-        return this->tensor.get();
-    }
-    const T* end() const{
-        return this->tensor.get() + this->getTotalEntries();
-    }
-    
-    // Get the size of the tensor
+    // Get the dimensions of the tensor
     std::vector<unsigned int> getDim() const{
         return this->dimensions;
     }
 
-    /**
-     * Set the entire tensor's entries from src_tensor
-     * The number of entries of src_tensor must match with this tensor.
-     */
-    void setTensor(const T *src_tensor, size_t num_entries){
-        if (num_entries != this->getTotalEntries()){
-            throw std::runtime_error("src_tensor has different number of entries than this tensor");
-        }
-
-        // If the tensor is sharing the memory with
-        if (this->tensor.use_count() > 1){
-            this->tensor = std::shared_ptr<T[]>(new T[num_entries], std::default_delete<T[]>());
-        }
-        std::copy(src_tensor, src_tensor + num_entries, this->tensor.get());
+    // Get the total number of entries of this tensor, depending on the dimension size
+    size_t getTotalEntries() const {
+        return this->totalEntries;
     }
-
 
     /**
      * Reset the dimension for the Tensor.
@@ -234,9 +186,11 @@ public:
         }
         this->dimensions = newDim;
     }
-    
-    // Get just a portion of a tensor,
-    // Tensor slicing
+
+    /**
+     * Get a specific portion of the tensor.
+     * Imagine having a rubik but you just want to remove a middle layer.
+     */
     Tensor<T> getSlicedTensor(std::vector<Range> bounds){
         if (bounds.size() > this->dimensions.size()){
             throw std::runtime_error("Bounds' dimension exceeds tensor's dimension");
@@ -332,48 +286,100 @@ public:
         return new_tensor;
     }
 
-    // Inspired by toString() in Java
-    std::string toString(){
-        return this->toStringHelper(this->dimensions.end() - 1, 0);
+
+    /**
+     * Allowing people to use syntax like instanceOfTensor({0,1}) to access each entry
+     * 
+     * The order of value in entry is from the least to most significant dimension.
+     * 
+     * ALERT: if the entry is modified via this method like 
+     *                instanceOfTensor1 = instanceOfTensor2
+     *                instanceOfTensor1({8,9}) = 8;
+     * The instanceOfTensor2 is also modified because they use the same shared pointer.
+     */
+    T& operator()(std::vector<unsigned int> posVec){
+        return this->tensor[this->posVecToIndex(posVec)];
+    }
+    const T& operator()(std::vector<unsigned int> posVec) const{
+        return this->tensor[this->posVecToIndex(posVec)];
     }
 
-
-
-
-    void trial(){
-        T h_tensor1[] = {0, 1, 2, 3, 4};
-        T h_tensor2[] = {5, 6, 7, 8, 9};
-        T *h_tensor = new T[5];
-
-        T *d_tensor1;
-        T *d_tensor2;
-        T *d_tensor;
-
-        size_t size = sizeof(T) * 5;
-
-        cudaMalloc(&d_tensor1, size);
-        cudaMalloc(&d_tensor2, size);
-        cudaMalloc(&d_tensor, size);
-
-        cudaMemcpy(d_tensor1, h_tensor1, size, cudaMemcpyHostToDevice);
-        cudaMemcpy(d_tensor2, h_tensor2, size, cudaMemcpyHostToDevice);
-
-        addTensor<<<1, 5>>>(d_tensor1, d_tensor2, d_tensor, 5);
-
-        cudaMemcpy(h_tensor, d_tensor, size, cudaMemcpyDeviceToHost);
-
-        cudaFree(d_tensor1);
-        cudaFree(d_tensor2);
-        cudaFree(d_tensor);
-
-        for (int i = 0; i < 5; i++){
-            std::cout << h_tensor[i] << " ";
+    // Overload operator +
+    Tensor<T> operator+(const Tensor& other) const
+    {
+        if (this->dimensions != other.getDim()){
+            throw std::runtime_error("Cannot perform addition on two different tensors");
         }
-        std::cout << std::endl;
+
+        // Create new tensor instance
+        Tensor newTensor(this->dimensions, nullptr);
         
-        delete[] h_tensor;
+        if (CUDA::isGPU_available()){ // Prioritize using GPU rather than CPU
+            // Perform on GPU
+            // Launch the kernel
+            CUDA::KernelWrap<T>::tensorAddition(this->tensor.get(), other.tensor.get(), newTensor.tensor.get(), this->totalEntries);
+        }
+        else {
+            // Perform on CPU
+            // Perform addition on this new tensor
+            for (unsigned int i = 0; i < other.totalEntries; i++){
+                newTensor.tensor[i] = this->tensor[i] + other.tensor[i];
+            }
+        }
+
+        return newTensor;
     }
+
+    // Binary minus
+    Tensor<T> operator-(const Tensor<T>& other) const {
+        if (this->getDim() != other.getDim()){
+            throw std::runtime_error("Cannot perform addition on two different tensors");
+        }
+
+        // Create new tensor instance
+        Tensor<T> newTensor(this->getDim());
+
+        if (CUDA::isGPU_available()){
+            // Perform on GPU
+            // Launch the kernel
+            CUDA::KernelWrap<T>::tensorSubtraction(this->tensor.get(), other.tensor.get(), newTensor.tensor.get(), this->totalEntries);
+        }
+        else {
+            // Perform subtraction on this new tensor
+            for (unsigned int i = 0; i < other.totalEntries; i++){
+                newTensor.tensor[i] = this->tensor[i] - other.tensor[i];
+            }
+        }
+
+        return newTensor;
+    }
+
+    // Unary minus
+    Tensor<T> operator-() const {
+        // Create new tensor instance
+        Tensor<T> newTensor(this->getDim());
+
+        // Create a tensor filled with 0
+        T buffer[this->totalEntries];
+        std::fill(buffer, buffer + this->totalEntries, 0);
+
+        if (CUDA::isGPU_available()){
+            // Perform on GPU
+            // Launch the kernel
+            CUDA::KernelWrap<T>::tensorSubtraction(buffer, this->tensor.get(), newTensor.tensor.get(), this->totalEntries);
+        }
+        else {
+            // Perform subtraction on this new tensor
+            for (unsigned int i = 0; i < this->totalEntries; i++){
+                newTensor.tensor[i] = -this->tensor[i];
+            }
+        }
+
+        return newTensor;
+    }
+
 };
 
+}
 
 #endif

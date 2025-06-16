@@ -1,9 +1,9 @@
 
 #ifndef MATRIX
 #define MATRIX
-
-
 #include "tensor.hpp"
+
+namespace IdioticML {
 
 template<typename T>
 class Matrix : public Tensor<T>{
@@ -13,10 +13,13 @@ public:
     Matrix() = default;
 
     // Init an empty matrix
-    Matrix(unsigned int columns, unsigned int rows) : Tensor<T>({columns, rows}){}
+    Matrix(unsigned int columns, unsigned int rows) 
+    : Tensor<T>({columns, rows}){}
     
     // Init a matrix from nested vector
-    Matrix(const std::vector<std::vector<T>>& src_mat) : Tensor<T>({(unsigned int)src_mat[0].size(), (unsigned int)src_mat.size()}){
+    Matrix(const std::vector<std::vector<T>>& src_mat) 
+    : Tensor<T>({(unsigned int)src_mat[0].size(), (unsigned int)src_mat.size()})
+    {
         for (unsigned int i = 1; i < src_mat.size(); i++){
             if (src_mat[i].size() != src_mat[0].size()){
                 throw std::runtime_error("Matrix size is not legit");
@@ -31,7 +34,9 @@ public:
     }
 
     // Primarily used for operators overloading.
-    Matrix(const T *src_tensor, const std::vector<unsigned int>& dimensions) : Tensor<T>(src_tensor, dimensions){
+    Matrix(const std::vector<unsigned int>& dimensions, const T *src_tensor) 
+    : Tensor<T>(dimensions, src_tensor)
+    {
         if (dimensions.size() > 2){
             throw std::runtime_error("Matrix is not legit");
         }
@@ -39,12 +44,9 @@ public:
 
     // Compatible with different primitive data type
     template<typename U>
-    Matrix(const Matrix<U>& other) : Tensor<T>(other.getDim()){
+    Matrix(const Matrix<U>& other) : Tensor<T>(other.getDim(), other.tensor){
         if (other.getDim().size() > 2){
             throw std::runtime_error("Matrix size is invalid");
-        }
-        for (unsigned int i = 0; i < this->totalEntries; i++){
-            this->tensor[i] = static_cast<T> (*(other.begin() + i));
         }
     }
 
@@ -61,7 +63,7 @@ public:
         // Create maxtrix instance
         Matrix<T> newMatrix(other.dimensions[0], this->dimensions[1]);
         
-        // Perform maxtrix cross product
+        // Perform maxtrix cross product on CPU
         // Inefficient O(n^3)
         for (unsigned int row = 0; row < this->dimensions[1]; row++){
             for (unsigned int col = 0; col < other.dimensions[0]; col++){
@@ -75,28 +77,23 @@ public:
 
     Matrix<T> operator+(const Matrix<T>& other) const {
         Tensor<T> result = Tensor<T>::operator+(other);
-        return Matrix<T>(result.begin(), result.getDim());
+        return Matrix<T>(result.getDim(), result.tensor);
     }
 
     Matrix<T> operator-(const Matrix<T>& other) const {
         Tensor<T> result = Tensor<T>::operator-(other);
-        return Matrix<T>(result.begin(), result.getDim());
+        return Matrix<T>(result.getDim(), result.tensor);
     }
 
     // Unary minus operator
     Matrix<T> operator-() const {
-        Tensor<T> newMatrix(this->dimensions);
-
-        for (unsigned int i = 0; i < newMatrix.getTotalEntries(); i++){
-            newMatrix.tensor[i] = - this->tensor[i];
-        }
-
-        return Matrix<T>(newMatrix.begin(), newMatrix.getDim());
+        Tensor<T> result = Tensor<T>::operator-();
+        return Matrix<T>(result.getDim(), result.tensor);
     }
 
     
 };
-
+}
 
 #endif
 
