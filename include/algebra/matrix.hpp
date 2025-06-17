@@ -42,6 +42,8 @@ public:
         }
     }
 
+    Matrix(const Tensor<T>& otherTensor) : Tensor<T>(otherTensor){}
+
     // Compatible with different primitive data type
     template<typename U>
     Matrix(const Matrix<U>& other) : Tensor<T>(other.getDim(), other.tensor){
@@ -77,18 +79,18 @@ public:
 
     Matrix<T> operator+(const Matrix<T>& other) const {
         Tensor<T> result = Tensor<T>::operator+(other);
-        return Matrix<T>(result.getDim(), result.tensor);
+        return Matrix<T>(result);
     }
 
     Matrix<T> operator-(const Matrix<T>& other) const {
         Tensor<T> result = Tensor<T>::operator-(other);
-        return Matrix<T>(result.getDim(), result.tensor);
+        return Matrix<T>(result);
     }
 
     // Unary minus operator
     Matrix<T> operator-() const {
         Tensor<T> result = Tensor<T>::operator-();
-        return Matrix<T>(result.getDim(), result.tensor);
+        return Matrix<T>(result);
     }
 
     

@@ -48,7 +48,7 @@ void CUDA::KernelWrap<T>::tensorAddition(const T *h_tensor1,
 {
     // The number of threads per block is set to a static number
     // So just need to calculate the number of blocks.
-    unsigned int numBlocks = totalEntries / CUDA::threadsPerBlock + 1;
+    unsigned int numBlocks = totalEntries / THREADSPERBLOCK + 1;
 
     // Allocate and copy data to GPU
     T *d_tensor1;
@@ -63,7 +63,7 @@ void CUDA::KernelWrap<T>::tensorAddition(const T *h_tensor1,
     cudaMemcpy(d_tensor2, h_tensor2, size, cudaMemcpyHostToDevice);
 
     // Launch the kernel
-    tensorAdditionKernel<T><<<numBlocks, CUDA::threadsPerBlock>>>(d_tensor1, 
+    tensorAdditionKernel<T><<<numBlocks, THREADSPERBLOCK>>>(d_tensor1, 
                                                                   d_tensor2, 
                                                                   d_tensor, 
                                                                   totalEntries);
@@ -101,7 +101,7 @@ void CUDA::KernelWrap<T>::tensorSubtraction(const T *h_tensor1,
 {
     // The number of threads per block is set to a static number
     // So just need to calculate the number of blocks.
-    unsigned int numBlocks = totalEntries / CUDA::threadsPerBlock + 1;
+    unsigned int numBlocks = totalEntries / THREADSPERBLOCK + 1;
 
     // Allocate and copy data to GPU
     T *d_tensor1;
@@ -116,7 +116,7 @@ void CUDA::KernelWrap<T>::tensorSubtraction(const T *h_tensor1,
     cudaMemcpy(d_tensor2, h_tensor2, size, cudaMemcpyHostToDevice);
 
     // Launch the kernel
-    tensorSubtractionKernel<T><<<numBlocks, CUDA::threadsPerBlock>>>(d_tensor1, 
+    tensorSubtractionKernel<T><<<numBlocks, THREADSPERBLOCK>>>(d_tensor1, 
                                                                      d_tensor2, 
                                                                      d_tensor, 
                                                                      totalEntries);
@@ -131,6 +131,38 @@ void CUDA::KernelWrap<T>::tensorSubtraction(const T *h_tensor1,
     cudaFree(d_tensor);
 }
 
+
+template<typename T>
+__global__
+void matrixMultKernel(const T* d_matrix1,
+                      const T* d_matrix2,
+                      T *matrix)
+{
+    
+}
+template<typename T>
+void CUDA::KernelWrap<T>::matrixMultiplication(const T *h_matrix1,
+                                               const std::vector<unsigned int>& h_matrix1_Dim,
+                                               const T *h_matrix2,
+                                               const std::vector<unsigned int>& h_matrix2_Dim,
+                                               T *h_matrix)
+{
+    T *d_matrix1;
+    T *d_matrix2;
+    T *d_matrix;
+    
+    size_t matrix1_size = h_matrix1_Dim[0] * h_matrix1_Dim[1];
+    size_t matrix2_size = h_matrix2_Dim[0] * h_matrix2_Dim[1];
+    size_t matrix_size = h_matrix1_Dim[0] * h_matrix2_Dim[1];
+
+    cudaMalloc(&d_matrix1, matrix1_size);
+    cudaMalloc(&d_matrix2, matrix2_size);
+    cudaMalloc(&d_matrix, matrix_size);
+    cudaMemcpy(d_matrix1, h_matrix1, matrix1_size, cudaMemcpyHostToDevice);
+    cudaMemcpy(d_matrix2, h_matrix2, matrix2_size, cudaMemcpyHostToDevice);
+
+
+}
 
 
 

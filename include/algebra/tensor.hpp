@@ -150,6 +150,9 @@ public:
         // Allocate and copy data to tensor
         this->allocate(src_tensor);
     }
+
+    // Constructor using another tensor.
+    Tensor (const Tensor<T>& other) : Tensor<T>(other.dimensions, other.tensor.get()){}
             
 
     /**
