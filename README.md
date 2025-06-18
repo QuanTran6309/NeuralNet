@@ -8,7 +8,7 @@ This is a light weight and high performance machine leaning library written enti
 - [Issues](#issue)
 - [Usage](#usage)
 - [Contributing](#contributing)
-- [License](#license)
+- [Liscense](#liscense)
 
 ## Contact
 - Email: tranlenanhquan6309@gmail.com
@@ -22,6 +22,8 @@ CPU
 
 GPU
 ![GPU_matMul_1000](repo_images/gpu_mat1000.png)
+
+This is a very amateur test I wrote quickly to confirm if using GPU is faster than CPU. I also notice that with tiny matrix, let say it just have 10 entries, it turns out using GPU is slower than CPU. I guess because given the small number of entries, the CPU iteration is still faster than the time we need to allocate, copy, launch kernel, and copy back to the host. I did benchmark this case, but I forgot to take a screenshot.
 
 ## Roadmap
 - Make all tensor operations run on GPU if it is available.
@@ -136,6 +138,10 @@ GPU
 ### 2. Matrix *(derive from class Tensor)*
 - Also has + - overloaded.
 - Also support matrix multiplication with (*).
-- 
 
 
+## Contribution
+- I'm doing this solo, so any contribution are appreciated. Should you need me to explain the code base for you, do not hesitate to contact me using the email above.
+
+## Liscense
+There is no liscense, feel free to clone, fork, and modify it as you want.
