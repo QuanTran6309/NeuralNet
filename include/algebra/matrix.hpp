@@ -65,15 +65,25 @@ public:
         // Create maxtrix instance
         Matrix<T> newMatrix(other.dimensions[0], this->dimensions[1]);
         
-        // Perform maxtrix cross product on CPU
-        // Inefficient O(n^3)
-        for (unsigned int row = 0; row < this->dimensions[1]; row++){
-            for (unsigned int col = 0; col < other.dimensions[0]; col++){
-                for (unsigned int itr = 0; itr < this->dimensions[0]; itr++){
-                    newMatrix({col, row}) += (this->tensor[row * this->dimensions[0] + itr] * other({col, itr}));
+        if (CUDA::is_GPUreadyToUse()){
+            CUDA::KernelWrap<T>::matrixMultiplication(this->tensor.get(),
+                                                      this->dimensions,
+                                                      other.tensor.get(),
+                                                      other.dimensions,
+                                                      newMatrix.tensor.get());
+        }
+        else {
+            // Perform maxtrix cross product on CPU
+            // Inefficient O(n^3)
+            for (unsigned int row = 0; row < this->dimensions[1]; row++){
+                for (unsigned int col = 0; col < other.dimensions[0]; col++){
+                    for (unsigned int itr = 0; itr < this->dimensions[0]; itr++){
+                        newMatrix({col, row}) += (this->tensor[row * this->dimensions[0] + itr] * other({col, itr}));
+                    }
                 }
             }
         }
+
         return newMatrix;
     }
 

@@ -21,7 +21,7 @@ namespace CUDA {
 /**
  * Check if there exists an NVIDIA GPU or not
  */
-bool isGPU_available();
+bool is_GPUreadyToUse();
 
 
 /**

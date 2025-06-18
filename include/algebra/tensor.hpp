@@ -35,6 +35,9 @@ private:
         if (src_ptr != nullptr){
             std::copy(src_ptr, src_ptr + this->totalEntries, this->tensor.get());
         }
+        else {
+            std::fill(this->tensor.get(), this->tensor.get() + this->totalEntries, 0);
+        }
     }
 
     /**
@@ -317,7 +320,7 @@ public:
         // Create new tensor instance
         Tensor newTensor(this->dimensions, nullptr);
         
-        if (CUDA::isGPU_available()){ // Prioritize using GPU rather than CPU
+        if (CUDA::is_GPUreadyToUse()){ // Prioritize using GPU rather than CPU
             // Perform on GPU
             // Launch the kernel
             CUDA::KernelWrap<T>::tensorAddition(this->tensor.get(), other.tensor.get(), newTensor.tensor.get(), this->totalEntries);
@@ -342,7 +345,7 @@ public:
         // Create new tensor instance
         Tensor<T> newTensor(this->getDim());
 
-        if (CUDA::isGPU_available()){
+        if (CUDA::is_GPUreadyToUse()){
             // Perform on GPU
             // Launch the kernel
             CUDA::KernelWrap<T>::tensorSubtraction(this->tensor.get(), other.tensor.get(), newTensor.tensor.get(), this->totalEntries);
@@ -366,7 +369,7 @@ public:
         T buffer[this->totalEntries];
         std::fill(buffer, buffer + this->totalEntries, 0);
 
-        if (CUDA::isGPU_available()){
+        if (CUDA::is_GPUreadyToUse()){
             // Perform on GPU
             // Launch the kernel
             CUDA::KernelWrap<T>::tensorSubtraction(buffer, this->tensor.get(), newTensor.tensor.get(), this->totalEntries);
