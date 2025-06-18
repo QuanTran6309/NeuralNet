@@ -1,4 +1,8 @@
 # A high performance C++ machine learning library
+
+![Status](https://img.shields.io/badge/STATUS-Development-purple)
+![TOPIC](https://img.shields.io/badge/TOPIC-Machine_learning-red)
+
 This is a light weight and high performance machine leaning library written entirely in C++. My aim is for people to use this library to run not just in their laptop or desktop but also in Iot devices which just have very limited memory.
 
 ## Table of content:
@@ -10,11 +14,11 @@ This is a light weight and high performance machine leaning library written enti
 - [Contributing](#contributing)
 - [Liscense](#liscense)
 
-## Contact
+## Contact 📧
 - Email: tranlenanhquan6309@gmail.com
 - Name: Quan Tran
 
-## Benchmark
+## Benchmark 🧪
 The following is a benchmark result of multiplying two matrices, each of which is of size 1000x1000
 
 CPU
@@ -25,19 +29,19 @@ GPU
 
 This is a very amateur test I wrote quickly to confirm if using GPU is faster than CPU. I also notice that with tiny matrix, let say it just have 10 entries, it turns out using GPU is slower than CPU. I guess because given the small number of entries, the CPU iteration is still faster than the time we need to allocate, copy, launch kernel, and copy back to the host. I did benchmark this case, but I forgot to take a screenshot.
 
-## Roadmap
+## Roadmap 🎯
 - Make all tensor operations run on GPU if it is available.
 - Implement the feedforward method of the Dense class to run on GPU.
 - Implement loss function and backpropagation.
 
-## Issues
+## Issues 🚩
 - The Matrix and Tensor classes are templated but if I want to support CUDA, I'll need to compile my code or the user will have to install nvcc to compile their code. The second scenario is not so favorable, so I choose to wrap all CUDA kernels by some static methods of a template class `KernelWrap` but doing that means I have to manually instantiate the KernelWrap. So technically, right now the library can only support `int`, `float`, `double`. I still have not found any better solutions.
 
 - It seems that CUDA has an amazing library called cuBLAS that provides blazing fast operations on matrices. Right now, every CUDA kernels I have implemented are so naive. Based on what I read on https://siboehm.com/articles/22/CUDA-MMM, it can be optimized even further.
 
 - The Dense class's feedforward method is still relying on the overloaded operations of Tensor and Matrix but those overloaded operators involve allocating on GPU, copying to GPU, launch kernel, copy back to host, and free the allocated pointer on GPU. Allocating and copying every time a operation is performed is a waste of time. Ideally, the entire model should be kept on the GPU for training and we just need to allocate and copy once. 
 
-## Usage
+## Usage 🐕‍🦺
 ### 1. Tensor *(the most basic unit)*
 - Mimic the multi-dimensional tensor just like in algebra.
 - You can have as many dimensions as you want.
