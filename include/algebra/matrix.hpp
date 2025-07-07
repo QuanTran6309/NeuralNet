@@ -2,6 +2,7 @@
 #ifndef MATRIX
 #define MATRIX
 #include "tensor.hpp"
+#include <iostream>
 
 namespace IdioticML {
 
@@ -65,7 +66,7 @@ public:
         // Create maxtrix instance
         Matrix<T> newMatrix(other.dimensions[0], this->dimensions[1]);
         
-        if (CUDA::is_GPUreadyToUse()){
+        if (true){
             CUDA::KernelWrap<T>::matrixMultiplication(this->tensor.get(),
                                                       this->dimensions,
                                                       other.tensor.get(),
@@ -102,8 +103,6 @@ public:
         Tensor<T> result = Tensor<T>::operator-();
         return Matrix<T>(result);
     }
-
-    
 };
 }
 

@@ -1,6 +1,6 @@
 #include "utils.hpp"
 
-
+namespace IdioticML{
 namespace Utils {
 
     // Produce the cartesian product and sum each element within each set
@@ -43,5 +43,5 @@ namespace Utils {
     }
     
 }
-
+}
 

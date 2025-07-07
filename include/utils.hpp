@@ -4,6 +4,7 @@
 #include <vector>
 #include <random>
 
+namespace IdioticML{
 namespace Utils {
 
 // Produce the cartesian product and sum each element within each set
@@ -27,6 +28,7 @@ struct Randomizer{
 };
 
 unsigned int bigToLittle_endian(const unsigned char* bytes);
+}
 }
 
 
