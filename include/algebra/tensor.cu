@@ -1,25 +1,12 @@
 #include "tensor.hpp"
 #include "utils.hpp"
-#include "adapter/cublas.cuh"
+#include "vendor/cublas.cuh"
+#include "vendor/logger.cuh"
 
 #include <cstring>
 #include <iostream>
 #include <cuda_runtime.h>
 
-
-#define CUDA_CHECK(call){ \
-    cudaError_t err = call; \
-    if (err != cudaSuccess) { \
-        throw std::runtime_error(std::string("CUDA error at: ") + __FILE__ + ":" + std::to_string(__LINE__) + "-" + cudaGetErrorString(err)); \
-    }\
-}
-
-#define CUBLAS_CHECK(call){ \
-    cublasStatus_t stat = call; \
-    if (stat != CUBLAS_STATUS_SUCCESS) { \
-        throw std::runtime_error(std::string("CUBLAS error at: ") + __FILE__ + ":" + std::to_string(__LINE__)); \
-    }\
-}
 
 namespace IdioticML {
 
@@ -59,7 +46,7 @@ Tensor::Tensor (const std::vector<unsigned int>& dimensions,
     this->dimensions = dimensions;
     this->totalEntries = std::accumulate(this->dimensions.begin(), this->dimensions.end(), 1, std::multiplies<unsigned int>());
     if (this->totalEntries == 0){
-        throw std::runtime_error("A tensor must have more than 1 entry");
+        throw std::runtime_error("One of the size of the given dimensions is 0.");
     }
     this->type = type;
     this->entrySize = DataType::getDatTypeSize(this->type);
@@ -68,19 +55,40 @@ Tensor::Tensor (const std::vector<unsigned int>& dimensions,
     // The total number of bytes this tensor has.
     unsigned int size = this->totalEntries * this->entrySize;
 
+    // Very crucial for the destructor;
+    this->tensorPtr = nullptr;
+
     // Tensor memory allocation depends on if the tensor is on GPU or CPU
     if (this->isOnGPU){
-        CUDA_CHECK(cudaMalloc(&this->tensorPtr, size));
         if (src_tensor != nullptr) {
+            CUDA_CHECK(cudaMalloc(&this->tensorPtr, size));
             CUDA_CHECK(cudaMemcpy(this->tensorPtr, src_tensor, size, cudaMemcpyHostToDevice));
         }
     }
     else {
-        this->tensorPtr = static_cast<char *>(std::malloc(size));
         if (src_tensor != nullptr){
+            this->tensorPtr = (char *)std::malloc(size);
             memcpy(this->tensorPtr, src_tensor, size);
         }
     }
+}
+
+/**
+ * Special and DANGEROUS constructor.
+ * 
+ * This constructor technically is doing: thisTensor = anotherTensor;
+ * The tensor pointer of thisTensor is plainly assigned by anotherTensor's tensor pointer.
+ * 
+ * I implement this constructor for the sake of convenience when I need to overload the + and - 
+ * of the Matrix class. Those two operators of Matrix class work the same way the Tensor class does.
+ */
+Tensor::Tensor(Tensor& other) : Tensor(other.dimensions, 
+                                       nullptr, 
+                                       other.type, 
+                                       other.isOnGPU)
+{
+    this->tensorPtr = other.tensorPtr;
+    other.tensorPtr = nullptr;
 }
 
 
@@ -89,6 +97,9 @@ Tensor::Tensor (const std::vector<unsigned int>& dimensions,
  * Free the pointer and check if there is any instance of Tensor left, if there is not, destroy the cublas handler.
  */
 Tensor::~Tensor(){
+    if (this->tensorPtr == nullptr){
+        return;
+    }
     if (this->isOnGPU){
         CUDA_CHECK(cudaFree(this->tensorPtr));
     }
@@ -97,17 +108,6 @@ Tensor::~Tensor(){
     }
 }
 
-/**
- * Take the given pointer to be the tensor.
- * 
- * ALERT: Be very careful when using this method, because it does not do any copy
- *        but just simply assign the member pointer to the given pointer without 
- *        any check. This method also does not check the location of the pointer if it is
- *        on the device or host.
- */
-void Tensor::takePtrOwnership(void *src_ptr){
-    this->tensorPtr = (char *)src_ptr;
-}
 
 /**
  * Get the value of a specific entry given by posVec
@@ -154,7 +154,7 @@ void Tensor::to(DataType::DEVICE device){
     this->tensorPtr = tensorBuff;
 }
 
-DataType::DEVICE Tensor::device(){
+DataType::DEVICE Tensor::device() const{
     return this->isOnGPU ? DataType::DEVICE::GPU : DataType::DEVICE::CPU;
 }
 
@@ -238,6 +238,12 @@ std::vector<unsigned int> Tensor::getDim() const{
 unsigned int Tensor::getTotalEntries() const {
     return this->totalEntries;
 }
+
+// Get the data type of each entry of the Tensor
+DataType::DataType Tensor::getType() const{
+    return this->type;
+}
+
 
 /**
  * Get a specific portion of the tensor.
@@ -412,6 +418,10 @@ Tensor Tensor::operator+(const Tensor& other) const{
         throw std::runtime_error("Both tensors must be on the same device");
     }
 
+    if (this->type != other.type){
+        throw std::runtime_error("Both tensors must have the same data type");
+    }
+
     Tensor newTensor(this->dimensions, 
                      nullptr, 
                      this->type, 
@@ -497,6 +507,9 @@ Tensor Tensor::operator-(const Tensor& other) const{
     }
     if (this->isOnGPU ^ other.isOnGPU){
         throw std::runtime_error("Both tensors must be on the same device");
+    }
+    if (this->type != other.type){
+        throw std::runtime_error("Both tensors must have the same data type");
     }
 
     Tensor newTensor(this->dimensions, 

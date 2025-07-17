@@ -1,5 +1,5 @@
 #include "cublas.cuh"
-#include <iostream>
+#include "logger.cuh"
 
 
 CublasSingleton* CublasSingleton::instance = nullptr;
@@ -18,7 +18,6 @@ const cublasHandle_t& CublasSingleton::getHandler(){
         CublasSingleton::instance = new CublasSingleton();
     }    
     CublasSingleton::useCounter++;
-    std::cout << "Get a handler" << std::endl;
     return CublasSingleton::instance->handler;
 }
 
@@ -32,8 +31,6 @@ void CublasSingleton::releaseHandler(){
         delete CublasSingleton::instance;
         CublasSingleton::instance = nullptr;
     }
-
-    std::cout << "Currently use counter: " << CublasSingleton::useCounter << std::endl;
 }
 
 

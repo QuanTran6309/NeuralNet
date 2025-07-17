@@ -70,17 +70,15 @@ protected:
     unsigned int entrySize;    
 
     /**
-     * Take the given pointer to be the tensor.
+     * Special and DANGEROUS constructor.
      * 
-     * @param src_ptr: pointer to the source tensor. Can either be on RAM or GPU.
-     *                 If the current Tensor is on GPU, it will assume this src_ptr is also
-     *                 on GPU; and vice versa.
-     * ALERT: Be very careful when using this method, because it does not do any copy
-     *        but just simply assign the member pointer to the given pointer without 
-     *        any check.
-     * NOTE: I primarily use this to avoid buffering a huge tensor when I do any tensor's operations.
+     * This constructor technically is doing: thisTensor = anotherTensor;
+     * The tensor pointer of thisTensor is plainly assigned by anotherTensor's tensor pointer.
+     * 
+     * I implement this constructor for the sake of convenience when I need to overload the + and - 
+     * of the Matrix class. Those two operators of Matrix class work the same way the Tensor class does.
      */
-    void takePtrOwnership(void * src_ptr);
+    Tensor (Tensor& other);
     
 public:
 
@@ -117,7 +115,7 @@ public:
     /**
      * Get the device the tensor is on.
      */
-    DataType::DEVICE device();
+    DataType::DEVICE device() const;
 
     /**
      * Get the visualized string of the Tensor.
@@ -135,6 +133,9 @@ public:
 
     // Get the total number of entries of this tensor, depending on the dimension size
     unsigned int getTotalEntries() const;
+
+    // Get the data type of each entry of the Tensor
+    DataType::DataType getType() const;
 
     /**
      * Get a specific portion of the tensor.
