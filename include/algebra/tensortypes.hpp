@@ -6,28 +6,27 @@
 
 namespace IdioticML {
 
-namespace DataType{
 
-enum DataType {
+enum TensorType {
     FLOAT,
     DOUBLE
 };
 
-inline unsigned int getDatTypeSize(DataType type){
+inline unsigned int getDatTypeSize(TensorType type){
     switch (type)
     {
-    case DataType::FLOAT:
+    case TensorType::FLOAT:
         return sizeof(float);    
-    case DataType::DOUBLE:
+    case TensorType::DOUBLE:
         return sizeof(double);
     default:
         throw std::runtime_error("Unsupported data type");
     }
 }
 
-enum DEVICE { GPU, CPU };
+enum DeviceType { GPU, CPU };
 
-}
+
 }
 
 #endif

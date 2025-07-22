@@ -9,7 +9,8 @@
 #include <stdexcept>
 #include <unordered_map>
 
-#include "datatypes.hpp"
+#include "tensortypes.hpp"
+#include "memory/device_context.hpp"
 
 
 namespace IdioticML{
@@ -21,12 +22,6 @@ struct Range {
 };
 
 class Tensor {
-private:
-
-    // Translate the position vector to the offset on the memory
-    static unsigned int posVecToIndex(const std::vector<unsigned int>& pos, 
-                                      const std::vector<unsigned int>& dimensions, 
-                                      unsigned int totalEntries);
 
 protected:
     /**
@@ -39,35 +34,11 @@ protected:
      * ... so on
      */
     std::vector<unsigned int> dimensions;
-
-    /**
-     * Keep track of the tensor inside RAM or GPU
-     * Use char * for easier iteration.
-     */
-    char *tensorPtr; 
-
-    /**
-     * Tell if this tensor should be allocated on GPU or CPU.
-     */
-    bool isOnGPU;
-
-    /**
-     * The total number of entries this tensor has.
-     * 
-     * This member does not tell anything about the dimensions or placees of the entries,
-     * just the total number of entries.
-     */
-    unsigned int totalEntries;
-
-    /**
-     * Represent the data type of each entry of the tensor.
-     */
-    DataType::DataType type; 
-
-    /**
-     * Size of each entry in byte
-     */
-    unsigned int entrySize;    
+    char *tensorPtr;  // Keep track of tensor data
+    std::shared_ptr<DeviceContext> deviceContext; // Handle allocate and deallocate tensorPtr. Abstract away the complexity of using GPU and CPU
+    unsigned int totalEntries;   // Total number of entries
+    TensorType type;             // Data type of each entry
+    unsigned int entrySize;      // The size of the TensorType type
 
     /**
      * Special and DANGEROUS constructor.
@@ -94,9 +65,9 @@ public:
      * @param type: data type of each entry of the Tensor.
      */
     Tensor (const std::vector<unsigned int>& dimensions,
-            void *src_tensor = nullptr,
-            DataType::DataType type = DataType::DataType::FLOAT,
-            bool isOnGPU = false);
+            const void *src = nullptr,
+            TensorType type = TensorType::FLOAT,
+            Device device = Device{});
 
     /**
      * Get the value of a specific entry given by posVec
@@ -110,12 +81,12 @@ public:
      * Tell the tensor to migrate the data to either CPU or GPU.
      * 
      */
-    void to(DataType::DEVICE device);
+    void to(DeviceType device);
 
     /**
      * Get the device the tensor is on.
      */
-    DataType::DEVICE device() const;
+    DeviceType device() const;
 
     /**
      * Get the visualized string of the Tensor.
@@ -135,7 +106,7 @@ public:
     unsigned int getTotalEntries() const;
 
     // Get the data type of each entry of the Tensor
-    DataType::DataType getType() const;
+    TensorType getType() const;
 
     /**
      * Get a specific portion of the tensor.

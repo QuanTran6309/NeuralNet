@@ -4,14 +4,14 @@ CXXFLAGS= -I include/
 DEBUGFLAG=-g
 
 BUILD_DIR=build
-INCLUDE_DIR=include
+SRC_DIR=src
 DATA_DIR=data
 
-CPP_SRC=$(shell find $(INCLUDE_DIR) -name '*.cpp')
+CPP_SRC=$(shell find $(SRC_DIR) -name '*.cpp')
 CPP_OBJ=$(CPP_SRC:%.cpp=$(BUILD_DIR)/%.o)
 
-CU_SRC=$(shell find $(INCLUDE_DIR) -name '*.cu')
-CU_OBJ=$(CU_SRC:%.cpp=$(BUILD_DIR)/%.o)
+CU_SRC=$(shell find $(SRC_DIR) -name '*.cu')
+CU_OBJ=$(CU_SRC:%.cu=$(BUILD_DIR)/%.o)
 
 OPENCV=$(shell pkg-config --cflags --libs opencv4)
 
