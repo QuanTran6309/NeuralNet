@@ -1,4 +1,4 @@
-#include "memory/device_adapter.hpp"
+#include "memory/adapter/device_adapter.hpp"
 
 namespace IdioticML {
 

@@ -1,7 +1,6 @@
-#include "memory/cpu_adapter.hpp"
+#include "memory/adapter/cpu_adapter.hpp"
 #include "utils/logger.cuh"
 #include <cuda_runtime.h>
-#include <iostream>
 #include <cstring>
 
 namespace IdioticML{
@@ -73,6 +72,70 @@ int CPU_adapter::getGPU_id(){
 }
 
 
+
+template<typename T>
+inline void additionHelper(T *dest, const T *src1, const T *src2, unsigned int numberOfEntries){
+    for (unsigned int i = 0; i < numberOfEntries; i++){
+        dest[i] = src1[i] + src2[i];
+    }
+}
+void CPU_adapter::add(void *dest, 
+                     const void *src1, 
+                     const void *src2, 
+                     unsigned int numberOfEntries, 
+                     const TensorType& type) 
+{
+    // This switch case is ridiculous but I have no better way.
+    switch (type)
+    {
+    case TensorType::FLOAT: {
+        additionHelper<float>((float *)dest, (float *)src1, (float *)src2, numberOfEntries);
+        break;
+    }
+    case TensorType::DOUBLE: {
+        additionHelper<double>((double *)dest, (double *)src1, (double *)src2, numberOfEntries);
+        break;
+    }
+    default:
+        LOGEXCEPTION("Unknown datatype");
+    }
+}   
+
+
+template<typename T>
+inline void multiplicationHelper(int m, int n, int k,
+                                 const T *src1,
+                                 const T *src2,
+                                 T *dest)
+{
+    for (unsigned int row = 0; row < n; row++){
+        for (unsigned int col = 0; col < m; col++){
+            for (unsigned int itr = 0; itr < k; itr++){
+                dest[col + row * m] += ( src1[row * n + itr] * src2[col + itr * m] );
+            }
+        }
+    }
+}
+void CPU_adapter::mult(int m, int n, int k,
+                       const void *src1,
+                       const void *src2,
+                       void *dest,
+                       const TensorType& type)
+{
+    switch (type)
+    {
+    case TensorType::FLOAT:{
+        multiplicationHelper<float>(m, n, k, (float *)src1, (float *)src2, (float *)dest);
+        break;
+    }
+    case TensorType::DOUBLE:{
+        multiplicationHelper<double>(m, n, k, (double *)src1, (double *)src2, (double *)dest);
+        break;
+    }
+    default:
+        LOGEXCEPTION("Unknown datatype")
+    }
+}
 
 
 }

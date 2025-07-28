@@ -12,7 +12,7 @@ enum TensorType {
     DOUBLE
 };
 
-inline unsigned int getDatTypeSize(TensorType type){
+inline unsigned int getTensorTypeSize(TensorType type){
     switch (type)
     {
     case TensorType::FLOAT:

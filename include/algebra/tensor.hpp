@@ -6,11 +6,9 @@
 #include <vector>
 #include <memory>
 #include <numeric>
-#include <stdexcept>
-#include <unordered_map>
 
 #include "tensortypes.hpp"
-#include "memory/device_context.hpp"
+#include "memory/adapter/device_adapter.hpp"
 
 
 namespace IdioticML{
@@ -21,7 +19,14 @@ struct Range {
     unsigned int end;   // inclusive
 };
 
+class LinAlg;
+
 class Tensor {
+    
+    friend LinAlg;
+
+
+private:
 
 protected:
     /**
@@ -34,22 +39,29 @@ protected:
      * ... so on
      */
     std::vector<unsigned int> dimensions;
-    char *tensorPtr;  // Keep track of tensor data
-    std::shared_ptr<DeviceContext> deviceContext; // Handle allocate and deallocate tensorPtr. Abstract away the complexity of using GPU and CPU
+    void *tensorPtr;  // Keep track of tensor data
+    std::shared_ptr<DeviceAdapter> deviceAdapter;
+
     unsigned int totalEntries;   // Total number of entries
     TensorType type;             // Data type of each entry
     unsigned int entrySize;      // The size of the TensorType type
 
+
     /**
-     * Special and DANGEROUS constructor.
+     * Dangerous constructor.
      * 
-     * This constructor technically is doing: thisTensor = anotherTensor;
-     * The tensor pointer of thisTensor is plainly assigned by anotherTensor's tensor pointer.
+     * Instance created by this constructor will take the given adapter and tensorPtr instead
+     * of forming and copying like the public constructor.
      * 
-     * I implement this constructor for the sake of convenience when I need to overload the + and - 
-     * of the Matrix class. Those two operators of Matrix class work the same way the Tensor class does.
+     * @param tensorPtr: the member tensorPtr of the instance will take over the ownership of the data this pointer is holding
+     * @param adapter: the member deviceAdapter will share the same instance with this.
+     * 
+     * I implemented this constructor to support creating instance inside arithmetic operator overload.
      */
-    Tensor (Tensor& other);
+    Tensor (const std::vector<unsigned int>& dimensions,
+            std::shared_ptr<DeviceAdapter> adapter,
+            void * tensorPtr,
+            TensorType type = TensorType::FLOAT);
     
 public:
 
@@ -69,6 +81,7 @@ public:
             TensorType type = TensorType::FLOAT,
             Device device = Device{});
 
+    
     /**
      * Get the value of a specific entry given by posVec
      * 
@@ -79,14 +92,13 @@ public:
 
     /**
      * Tell the tensor to migrate the data to either CPU or GPU.
-     * 
      */
-    void to(DeviceType device);
+    void toDevice(DeviceType device = DeviceType::CPU, int id = 0);
 
     /**
      * Get the device the tensor is on.
      */
-    DeviceType device() const;
+    DeviceType getDeviceType() const;
 
     /**
      * Get the visualized string of the Tensor.
@@ -105,20 +117,22 @@ public:
     // Get the total number of entries of this tensor, depending on the dimension size
     unsigned int getTotalEntries() const;
 
+    unsigned int getEntrySize() const;
+
     // Get the data type of each entry of the Tensor
     TensorType getType() const;
 
+    
     /**
      * Get a specific portion of the tensor.
      * Imagine having a rubik but you just want to remove a middle layer.
      */
     Tensor operator()(std::vector<Range> bounds);
 
-    /**
-     * Overload the + operator.
-     */
-    Tensor operator+(const Tensor& other) const;
-    Tensor operator-(const Tensor& other) const;
+
+    Tensor operator+(const Tensor& other);
+    Tensor operator*(const Tensor& other);
+
 };
 }
 
