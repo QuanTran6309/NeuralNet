@@ -70,7 +70,7 @@ void GPU_adapter::copyTo(void *dest, const void *src, size_t num_bytes){
 
 
 template<typename T>
-__global__ void simulAssign(T *dest, 
+__global__ void simultAssign(T *dest, 
                             const T *src, 
                             const unsigned int *indices, 
                             unsigned int numberOfIndices)
@@ -86,13 +86,21 @@ void GPU_adapter::copyAtIndices(void *dest,
                                 unsigned int numberOfIndices,
                                 const TensorType& type)
 {
+
+    int blocks = (numberOfIndices + CHUNK - 1) / CHUNK;
     switch (type)
     {
     case TensorType::FLOAT:
-        
+        simultAssign<float><<<blocks, CHUNK>>>(static_cast<float *>(dest),
+                                               static_cast<const float *>(src),
+                                               indices,
+                                               numberOfIndices);
         break;
     case TensorType::DOUBLE:
-        /* code */
+        simultAssign<double><<<blocks, CHUNK>>>(static_cast<double *>(dest),
+                                                static_cast<const double *>(src),
+                                                indices,
+                                                numberOfIndices);
         break;
     default:
         break;

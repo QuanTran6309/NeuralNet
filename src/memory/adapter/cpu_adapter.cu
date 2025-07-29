@@ -79,13 +79,12 @@ inline void simultAssign(T *dest,
     ((dest[i + Idx] = src[indices[i + Idx]]), ...);
 }
 template<typename T> 
-inline void copyIndexHelper(T *dest, 
-                            const T *src, 
-                            const unsigned int *indices, 
-                            unsigned int numberOfIndices,
-                            unsigned int remain,
-                            unsigned int iterations
-                        )
+inline void copyAtIndicesHelper(T *dest, 
+                                const T *src, 
+                                const unsigned int *indices, 
+                                unsigned int numberOfIndices,
+                                unsigned int remain,
+                                unsigned int iterations)
 {
 
     for (unsigned int i = 0; i < iterations; i++){
@@ -109,20 +108,20 @@ void CPU_adapter::copyAtIndices(void *dest,
     switch (type)
     {
     case TensorType::FLOAT:
-        copyIndexHelper<float>(static_cast<float *>(dest), 
-                               static_cast<const float *>(src), 
-                               indices, 
-                               numberOfIndices,
-                               remain,
-                               iterations);
+        copyAtIndicesHelper<float>(static_cast<float *>(dest), 
+                                   static_cast<const float *>(src), 
+                                   indices, 
+                                   numberOfIndices,
+                                   remain,
+                                   iterations);
         break;
     case TensorType::DOUBLE:
-        copyIndexHelper<double>(static_cast<double *>(dest), 
-                               static_cast<const double *>(src), 
-                               indices, 
-                               numberOfIndices,
-                               remain,
-                               iterations);
+        copyAtIndicesHelper<double>(static_cast<double *>(dest), 
+                                    static_cast<const double *>(src), 
+                                    indices, 
+                                    numberOfIndices,
+                                    remain,
+                                    iterations);
         break;
     default:
         LOGEXCEPTION("Unsupported tensor type")
