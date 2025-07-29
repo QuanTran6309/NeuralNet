@@ -12,6 +12,11 @@ public:
     void allocate(void **ptr, size_t num_bytes, const void *src = nullptr) override;
     void deallocate(void **ptr) override;
     void copyTo(void *dest, const void *src, size_t num_bytes) override;
+    void copyAtIndices(void *dest, 
+                       const void *src, 
+                       const unsigned int *indices, 
+                       unsigned int numberOfIndices, 
+                       const TensorType& type) override;
 
     bool isGPU() override;
     bool isCPU() override;

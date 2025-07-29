@@ -187,6 +187,100 @@ void Tensor::toDevice(DeviceType type, int id){
     this->deviceAdapter = newAdapter;
 }
 
+// Get a sliced tensor
+Tensor Tensor::slice(std::vector<Range> bounds){
+    if (bounds.size() > this->dimensions.size()){
+        LOGEXCEPTION("Bounds' dimension exceeds tensor's dimension");
+    }
+
+    // Used to store the indices for each entry that we'll copy from source tensor
+    std::vector<unsigned int> indices;
+    
+    // Get the new dimension for the new tensor
+    std::vector<unsigned int> newDim;
+
+    // To iterate a tensor in one dimension, we have to use [index * (product of all previous dimension size)]
+    unsigned int prevSize = 1;
+    for (unsigned int i = 0; i < this->dimensions.size() - 1; i++){
+        prevSize *= this->dimensions[i];
+    }
+    
+    /**
+     * For example: bounds = {
+     *                        {1:3}
+     *                        {0:2}
+     *                        {2:4} 
+     *                       }
+     * The loop will convert that to
+     *              {
+     *              {1, 2, 3},
+     *              {0, 1, 2} * 0th dim,
+     *              {2, 3, 4} * 0th dim * 1th dim
+     *              }
+     * and finally perform cartesian product and sum all of elements within each set to get the set
+     * of indices to copy from
+     *
+     * We need to iterate from the bottom of the bounds to ensure the ascending order of the offsets
+     */
+    for (int i = bounds.size() - 1; i >= 0; i--){
+        Range bound = bounds[i];
+        std::vector<unsigned int> index;
+
+        // 1:4 get all entries from 1 to 4
+        if (bound.start <= bound.end){
+            if (bound.end >= this->dimensions[i]){
+                throw std::runtime_error("Index out of bound");
+            }
+            unsigned int dimSize = bound.end - bound.start + 1;
+
+            // Insert the size for this dimension to newDim
+            newDim.insert(newDim.begin(), dimSize);
+            
+            // Insert indices 
+            for (unsigned int i = bound.start; i <= bound.end; i++){
+                index.push_back(i * prevSize);
+            }
+        }
+        // 4:1 get all entries from 0->1 and from 4->end
+        else {
+            if (bound.start >= this->dimensions[i]){
+                throw std::runtime_error("Index out of bound");
+            }
+            unsigned int dimSize = bound.end + 1 + (this->dimensions[i] - bound.start);
+
+            // Insert the size for this dimension to newDim
+            newDim.insert(newDim.begin(), dimSize);
+
+            // Insert indices 
+            for (unsigned int j = 0; j <= bound.end; j++){
+                index.push_back(j * prevSize);
+            }
+            for (unsigned int j = bound.start; j < this->dimensions[i]; j++){
+                index.push_back(j * prevSize);
+            }
+        }
+        
+        if (i > 0){
+            prevSize /= this->dimensions[i - 1];
+        }
+        
+        // Process the indices
+        if (indices.size() != 0){
+            indices = Algorithm::sumOfCartesianProd({indices, index});
+        }
+        else{
+            indices = index;
+        }
+    }
+
+    void *newTensorPtr; // Dont free this pointer because the returned tensor will take ownership of it.
+    this->deviceAdapter->allocate(&newTensorPtr, this->entrySize * this->totalEntries);
+    this->deviceAdapter->copyAtIndices(newTensorPtr, this->tensorPtr, indices.data(), indices.size(), this->type);
+
+    Tensor newTensor(newDim, this->deviceAdapter, newTensorPtr, this->type);
+
+    return newTensor;
+}
 
 
 Tensor Tensor::operator+(const Tensor& other){
@@ -223,8 +317,8 @@ Tensor Tensor::operator*(const Tensor& other){
     void *newTensorPtr;
     this->deviceAdapter->allocate(&newTensorPtr, this->entrySize * this->dimensions[1] * other.dimensions[0]);
     this->deviceAdapter->mult(other.dimensions[0], this->dimensions[1], this->dimensions[0],
-                              other.tensorPtr,
                               this->tensorPtr,
+                              other.tensorPtr,
                               newTensorPtr, 
                               this->type);
 

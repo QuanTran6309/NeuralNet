@@ -4,6 +4,8 @@
 #include "memory/device.hpp"
 #include <vector>
 
+#define CHUNK 8
+
 namespace IdioticML{
 /**
  * In charge of handling operations relating to a specific device, CPU or GPU
@@ -18,6 +20,7 @@ public:
     DeviceType getDeviceType();
 
 
+    // Memory methods
     /**
      * Allocate memory for ptr and copy from src to ptr.
      * src pointer can be either on CPU or GPU does not matter.
@@ -33,6 +36,18 @@ public:
      */
     virtual void copyTo(void *dest, const void *src, size_t num_bytes) = 0;
 
+    /**
+     * Only copy data at certain indices to the destination
+     * This method needs to traverse the data so it needs to known the tensor type.
+     */
+    virtual void copyAtIndices(void *dest, 
+                               const void *src, 
+                               const unsigned int *indices, 
+                               unsigned int numberOfIndices, 
+                               const TensorType& type) = 0;
+
+
+    // Device's information methods
     virtual bool isGPU() = 0;
     virtual bool isCPU() = 0;
     virtual int getGPU_id() = 0;

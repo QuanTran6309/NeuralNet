@@ -2,6 +2,7 @@
 #include "utils/logger.cuh"
 #include <cuda_runtime.h>
 #include <cstring>
+#include <utility>
 
 namespace IdioticML{
 
@@ -16,6 +17,7 @@ void CPU_adapter::allocate(void **ptr, size_t num_bytes, const void *src) {
     if (*ptr == nullptr) {
         LOGEXCEPTION("Fail to allocate memory on RAM.")
     }
+    std::memset(*ptr, 0, num_bytes); // Very important
 
     if (src == nullptr){
         return;
@@ -65,6 +67,71 @@ void CPU_adapter::copyTo(void *dest, const void *src, size_t num_bytes) {
 }
 
 
+
+
+template<typename T, std::size_t... Idx>
+inline void simultAssign(T *dest, 
+                         const T *src, 
+                         const unsigned int i,
+                         const unsigned int *indices,
+                         std::index_sequence<Idx...>)                         
+{
+    ((dest[i + Idx] = src[indices[i + Idx]]), ...);
+}
+template<typename T> 
+inline void copyIndexHelper(T *dest, 
+                            const T *src, 
+                            const unsigned int *indices, 
+                            unsigned int numberOfIndices,
+                            unsigned int remain,
+                            unsigned int iterations
+                        )
+{
+
+    for (unsigned int i = 0; i < iterations; i++){
+        simultAssign<T>(dest, src, i, indices, std::make_index_sequence<CHUNK>{});
+    }
+    
+    // Handle the remaining.
+    for (unsigned int i = iterations * CHUNK; i < numberOfIndices; i++){
+        dest[i] = src[indices[i]];
+    }
+}
+void CPU_adapter::copyAtIndices(void *dest, 
+                                const void *src, 
+                                const unsigned int *indices, 
+                                unsigned int numberOfIndices,
+                                const TensorType& type)
+{
+    unsigned int remain = numberOfIndices % CHUNK;
+    unsigned int iterations = numberOfIndices / CHUNK;
+
+    switch (type)
+    {
+    case TensorType::FLOAT:
+        copyIndexHelper<float>(static_cast<float *>(dest), 
+                               static_cast<const float *>(src), 
+                               indices, 
+                               numberOfIndices,
+                               remain,
+                               iterations);
+        break;
+    case TensorType::DOUBLE:
+        copyIndexHelper<double>(static_cast<double *>(dest), 
+                               static_cast<const double *>(src), 
+                               indices, 
+                               numberOfIndices,
+                               remain,
+                               iterations);
+        break;
+    default:
+        LOGEXCEPTION("Unsupported tensor type")
+    }
+}
+
+
+
+
 bool CPU_adapter::isGPU() {return false;}
 bool CPU_adapter::isCPU() {return true;}
 int CPU_adapter::getGPU_id(){
@@ -103,7 +170,7 @@ void CPU_adapter::add(void *dest,
 
 
 template<typename T>
-inline void multiplicationHelper(int m, int n, int k,
+inline void multHelper(int m, int n, int k,
                                  const T *src1,
                                  const T *src2,
                                  T *dest)
@@ -111,7 +178,7 @@ inline void multiplicationHelper(int m, int n, int k,
     for (unsigned int row = 0; row < n; row++){
         for (unsigned int col = 0; col < m; col++){
             for (unsigned int itr = 0; itr < k; itr++){
-                dest[col + row * m] += ( src1[row * n + itr] * src2[col + itr * m] );
+                dest[col + row * m] += ( src1[row * k + itr] * src2[col + itr * m] );
             }
         }
     }
@@ -125,11 +192,17 @@ void CPU_adapter::mult(int m, int n, int k,
     switch (type)
     {
     case TensorType::FLOAT:{
-        multiplicationHelper<float>(m, n, k, (float *)src1, (float *)src2, (float *)dest);
+        multHelper<float>(m, n, k, 
+                          static_cast<const float*>(src1), 
+                          static_cast<const float*>(src2), 
+                          static_cast<float*>(dest));
         break;
     }
     case TensorType::DOUBLE:{
-        multiplicationHelper<double>(m, n, k, (double *)src1, (double *)src2, (double *)dest);
+        multHelper<double>(m, n, k, 
+                           static_cast<const double*>(src1),
+                           static_cast<const double*>(src2), 
+                           static_cast<double*>(dest));
         break;
     }
     default:

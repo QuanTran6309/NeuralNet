@@ -1,6 +1,5 @@
 #include "memory/adapter/gpu_adapter.cuh"
 #include "utils/logger.cuh"
-#include <iostream>
 #include <cuda_runtime.h>
 
 
@@ -68,6 +67,38 @@ void GPU_adapter::copyTo(void *dest, const void *src, size_t num_bytes){
     }
 }
 
+
+
+template<typename T>
+__global__ void simulAssign(T *dest, 
+                            const T *src, 
+                            const unsigned int *indices, 
+                            unsigned int numberOfIndices)
+{
+    int x = blockDim.x * blockIdx.x + threadIdx.x;
+    if (x < numberOfIndices){
+        dest[x] = src[indices[x]];
+    }
+}
+void GPU_adapter::copyAtIndices(void *dest, 
+                                const void *src, 
+                                const unsigned int *indices, 
+                                unsigned int numberOfIndices,
+                                const TensorType& type)
+{
+    switch (type)
+    {
+    case TensorType::FLOAT:
+        
+        break;
+    case TensorType::DOUBLE:
+        /* code */
+        break;
+    default:
+        break;
+    }
+    
+}
 
 
 bool GPU_adapter::isGPU() {return true;}

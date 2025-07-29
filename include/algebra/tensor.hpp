@@ -127,7 +127,7 @@ public:
      * Get a specific portion of the tensor.
      * Imagine having a rubik but you just want to remove a middle layer.
      */
-    Tensor operator()(std::vector<Range> bounds);
+    Tensor slice(std::vector<Range> bounds);
 
 
     Tensor operator+(const Tensor& other);
