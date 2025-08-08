@@ -19,12 +19,11 @@ struct Range {
     unsigned int end;   // inclusive
 };
 
-class LinAlg;
+class ActFunc;
 
 class Tensor {
     
-    friend LinAlg;
-
+    friend ActFunc;
 
 private:
 
@@ -39,7 +38,9 @@ protected:
      * ... so on
      */
     std::vector<unsigned int> dimensions;
+
     void *tensorPtr;  // Keep track of tensor data
+
     std::shared_ptr<DeviceAdapter> deviceAdapter;
 
     unsigned int totalEntries;   // Total number of entries

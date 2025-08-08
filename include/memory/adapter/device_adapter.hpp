@@ -13,6 +13,9 @@ namespace IdioticML{
 class DeviceAdapter {
 protected:
     Device device;
+    
+
+
 public:
     DeviceAdapter(const Device& device);
     virtual ~DeviceAdapter() = default;
@@ -66,6 +69,12 @@ public:
                       void *dest,
                       const TensorType& type) = 0;
 
+
+    // Some activation function
+    // These functions will overwrite the data in ptr
+
+
+        
 };
 
 }

@@ -86,26 +86,13 @@ void GPU_adapter::copyAtIndices(void *dest,
                                 unsigned int numberOfIndices,
                                 const TensorType& type)
 {
-
     int blocks = (numberOfIndices + CHUNK - 1) / CHUNK;
-    switch (type)
-    {
-    case TensorType::FLOAT:
-        simultAssign<float><<<blocks, CHUNK>>>(static_cast<float *>(dest),
-                                               static_cast<const float *>(src),
-                                               indices,
-                                               numberOfIndices);
-        break;
-    case TensorType::DOUBLE:
-        simultAssign<double><<<blocks, CHUNK>>>(static_cast<double *>(dest),
-                                                static_cast<const double *>(src),
-                                                indices,
-                                                numberOfIndices);
-        break;
-    default:
-        break;
-    }
-    
+    auto assignFunctor = [&](auto type_t) {
+        using T = decltype(type_t);
+        simultAssign<T><<<blocks, CHUNK>>>(static_cast<T *>(dest), static_cast<const T *>(src), indices, numberOfIndices);
+    };
+
+    type_dispatcher(type, assignFunctor);
 }
 
 
@@ -188,5 +175,8 @@ void GPU_adapter::mult(int m, int n, int k,
         LOGEXCEPTION("Unsupported data type")
     }
 }
+
+
+
 
 }

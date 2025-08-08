@@ -129,21 +129,13 @@ std::string Tensor::toString(){
     }
     std::string buffer;
 
-    switch (this->type)
-    {
-    case TensorType::FLOAT:
-        buffer = toStringHelper<float>(static_cast<float *>(bufferPtr), this->dimensions, this->dimensions.size() - 1, 0, 0);
-        break;
-    case TensorType::DOUBLE:
-        buffer = toStringHelper<double>(static_cast<double *>(bufferPtr), this->dimensions, this->dimensions.size() - 1, 0, 0);
-        break;
-    default:
-        if (this->deviceAdapter->getDeviceType() != DeviceType::CPU){
-            std::free(bufferPtr);
-        }
-        LOGEXCEPTION("Unsupported data type")
-    }
-    
+    auto stringFormation = [&](auto type_t){
+        using T = decltype(type_t);
+        buffer = toStringHelper<T>(static_cast<T *>(bufferPtr), this->dimensions, this->dimensions.size() - 1, 0, 0);
+    };
+
+    type_dispatcher(this->type, stringFormation);
+   
     if (this->deviceAdapter->getDeviceType() != DeviceType::CPU){
         std::free(bufferPtr);
     }

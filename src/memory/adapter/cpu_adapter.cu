@@ -78,24 +78,6 @@ inline void simultAssign(T *dest,
 {
     ((dest[i + Idx] = src[indices[i + Idx]]), ...);
 }
-template<typename T> 
-inline void copyAtIndicesHelper(T *dest, 
-                                const T *src, 
-                                const unsigned int *indices, 
-                                unsigned int numberOfIndices,
-                                unsigned int remain,
-                                unsigned int iterations)
-{
-
-    for (unsigned int i = 0; i < iterations; i++){
-        simultAssign<T>(dest, src, i, indices, std::make_index_sequence<CHUNK>{});
-    }
-    
-    // Handle the remaining.
-    for (unsigned int i = iterations * CHUNK; i < numberOfIndices; i++){
-        dest[i] = src[indices[i]];
-    }
-}
 void CPU_adapter::copyAtIndices(void *dest, 
                                 const void *src, 
                                 const unsigned int *indices, 
@@ -105,27 +87,24 @@ void CPU_adapter::copyAtIndices(void *dest,
     unsigned int remain = numberOfIndices % CHUNK;
     unsigned int iterations = numberOfIndices / CHUNK;
 
-    switch (type)
-    {
-    case TensorType::FLOAT:
-        copyAtIndicesHelper<float>(static_cast<float *>(dest), 
-                                   static_cast<const float *>(src), 
-                                   indices, 
-                                   numberOfIndices,
-                                   remain,
-                                   iterations);
-        break;
-    case TensorType::DOUBLE:
-        copyAtIndicesHelper<double>(static_cast<double *>(dest), 
-                                    static_cast<const double *>(src), 
-                                    indices, 
-                                    numberOfIndices,
-                                    remain,
-                                    iterations);
-        break;
-    default:
-        LOGEXCEPTION("Unsupported tensor type")
-    }
+
+    auto copyFunctor = [&](auto type_t){
+        using T = decltype(type_t);
+
+        T *destPtr = static_cast<T *>(dest);
+        const T *srcPtr = static_cast<const T *>(src);
+
+        for (unsigned int i = 0; i < iterations; i++){
+            simultAssign<T>(destPtr, srcPtr, i, indices, std::make_index_sequence<CHUNK>{});
+        }
+        
+        // Handle the remaining.
+        for (unsigned int i = iterations * CHUNK; i < numberOfIndices; i++){
+            destPtr[i] = srcPtr[indices[i]];
+        }
+    };
+
+    type_dispatcher(type, copyFunctor);
 }
 
 
@@ -138,75 +117,54 @@ int CPU_adapter::getGPU_id(){
 }
 
 
-
-template<typename T>
-inline void additionHelper(T *dest, const T *src1, const T *src2, unsigned int numberOfEntries){
-    for (unsigned int i = 0; i < numberOfEntries; i++){
-        dest[i] = src1[i] + src2[i];
-    }
-}
 void CPU_adapter::add(void *dest, 
                      const void *src1, 
                      const void *src2, 
                      unsigned int numberOfEntries, 
                      const TensorType& type) 
 {
-    // This switch case is ridiculous but I have no better way.
-    switch (type)
-    {
-    case TensorType::FLOAT: {
-        additionHelper<float>((float *)dest, (float *)src1, (float *)src2, numberOfEntries);
-        break;
-    }
-    case TensorType::DOUBLE: {
-        additionHelper<double>((double *)dest, (double *)src1, (double *)src2, numberOfEntries);
-        break;
-    }
-    default:
-        LOGEXCEPTION("Unknown datatype");
-    }
+
+    auto add_functor = [&](auto type_t) {
+        using T = decltype(type_t);
+
+        std::cout << "Tensor addition" << std::endl;
+        T *result = static_cast<T *>(dest);
+        const T *src_1 = static_cast<const T *>(src1);
+        const T *src_2 = static_cast<const T *>(src2);
+
+        for (unsigned int i = 0; i < numberOfEntries; i++){
+            result[i] = src_1[i] + src_2[i];
+        }
+    };
+
+    type_dispatcher(type, add_functor);
 }   
 
 
-template<typename T>
-inline void multHelper(int m, int n, int k,
-                                 const T *src1,
-                                 const T *src2,
-                                 T *dest)
-{
-    for (unsigned int row = 0; row < n; row++){
-        for (unsigned int col = 0; col < m; col++){
-            for (unsigned int itr = 0; itr < k; itr++){
-                dest[col + row * m] += ( src1[row * k + itr] * src2[col + itr * m] );
-            }
-        }
-    }
-}
 void CPU_adapter::mult(int m, int n, int k,
                        const void *src1,
                        const void *src2,
                        void *dest,
                        const TensorType& type)
 {
-    switch (type)
-    {
-    case TensorType::FLOAT:{
-        multHelper<float>(m, n, k, 
-                          static_cast<const float*>(src1), 
-                          static_cast<const float*>(src2), 
-                          static_cast<float*>(dest));
-        break;
-    }
-    case TensorType::DOUBLE:{
-        multHelper<double>(m, n, k, 
-                           static_cast<const double*>(src1),
-                           static_cast<const double*>(src2), 
-                           static_cast<double*>(dest));
-        break;
-    }
-    default:
-        LOGEXCEPTION("Unknown datatype")
-    }
+
+    auto mult_functor = [&](auto type_t){
+        using T = decltype(type_t);
+
+        T *result = static_cast<T *>(dest);
+        const T *src_1 = static_cast<const T *>(src1);
+        const T *src_2 = static_cast<const T *>(src2);
+
+        for (unsigned int row = 0; row < n; row++){
+            for (unsigned int col = 0; col < m; col++){
+                for (unsigned int itr = 0; itr < k; itr++){
+                    result[col + row * m] += ( src_1[row * k + itr] * src_2[col + itr * m] );
+                }
+            }
+        }
+    };
+
+    type_dispatcher(type, mult_functor);
 }
 
 

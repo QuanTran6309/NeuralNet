@@ -27,6 +27,8 @@ public:
     bool isCPU() override;
     int getGPU_id() override;
 
+
+    // Arithmetic
     void add(void *dest, 
              const void *src1, 
              const void *src2, 
@@ -38,6 +40,8 @@ public:
               const void *src2,
               void *dest,
               const TensorType& type) override;
+
+
 };
 
 }

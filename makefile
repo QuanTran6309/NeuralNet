@@ -36,3 +36,6 @@ $(BUILD_DIR)/%.o: %.cpp
 cuda: 
 	nvcc -Xcompiler -fPIC -shared -I include/  include/algebra/tensor.cu include/cuda/cuda.cu  -o libtensor.so
 	g++ main.cpp -L. -ltensor -I include/ -o main
+
+
+	g++ -I ../include/ -L.. -Wl,-rpath=.. main.cpp -ltensor -o main
