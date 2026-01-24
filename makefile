@@ -1,18 +1,17 @@
 CXX=g++
 
-CXXFLAGS= -Wall -I include/ -std=c++11
+CXXFLAGS= -I include/
 DEBUGFLAG=-g
 
 BUILD_DIR=build
-INCLUDE_DIR=include
+SRC_DIR=src
 DATA_DIR=data
 
-INCLUDE_SRCS=$(shell find $(INCLUDE_DIR) -name '*.cpp')
-INCLUDE_OBJ=$(INCLUDE_SRCS:%.cpp=$(BUILD_DIR)/%.o)
+CPP_SRC=$(shell find $(SRC_DIR) -name '*.cpp')
+CPP_OBJ=$(CPP_SRC:%.cpp=$(BUILD_DIR)/%.o)
 
-DATA_SRCS=$(shell find $(DATA_DIR) -name '*.cpp')
-DATA_OBJ=$(DATA_SRCS:%.cpp=$(BUILD_DIR)/%.o)
-
+CU_SRC=$(shell find $(SRC_DIR) -name '*.cu')
+CU_OBJ=$(CU_SRC:%.cu=$(BUILD_DIR)/%.o)
 
 OPENCV=$(shell pkg-config --cflags --libs opencv4)
 
@@ -22,12 +21,21 @@ clean:
 	rm -rf $(BUILD_DIR) main
 
 
-main: $(INCLUDE_OBJ) $(DATA_OBJ) main.cpp
-	$(CXX) $(CXXFLAGS) $(DEBUGFLAG) $^ -o main
+main: $(CPP_OBJ) $(CU_OBJ)
+	nvcc -Xcompiler -fPIC -shared -lcublas $(CXXFLAGS) $(DEBUGFLAG) $^ -o libtensor.so
 
-debug: $(INCLUDE_OBJ) $(DATA_OBJ) main.cpp
-	$(CXX) $(CXXFLAGS) $(DEBUGFLAG) $^ -o main $(OPENCV)
+$(BUILD_DIR)/%.o: %.cu
+	@mkdir -p $(dir $@)
+	nvcc -Xcompiler -fPIC -lcublas $(CXXFLAGS) -c $< -o $@
 
 $(BUILD_DIR)/%.o: %.cpp
 	@mkdir -p $(dir $@)
-	$(CXX) $(CXXFLAGS) -c $< -o $@
+	nvcc -Xcompiler -fPIC $(CXXFLAGS) -c $< -o $@
+
+
+cuda: 
+	nvcc -Xcompiler -fPIC -shared -I include/  include/algebra/tensor.cu include/cuda/cuda.cu  -o libtensor.so
+	g++ main.cpp -L. -ltensor -I include/ -o main
+
+
+	g++ -I ../include/ -L.. -Wl,-rpath=.. main.cpp -ltensor -o main
