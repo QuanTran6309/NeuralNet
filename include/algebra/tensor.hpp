@@ -47,7 +47,6 @@ protected:
     TensorType type;             // Data type of each entry
     unsigned int entrySize;      // The size of the TensorType type
 
-
     /**
      * Dangerous constructor.
      * 

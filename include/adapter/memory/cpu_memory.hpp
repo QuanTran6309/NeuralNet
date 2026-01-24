@@ -1,13 +1,13 @@
-#ifndef CPUHANDLER
-#define CPUHANDLER
+#ifndef CPUMEMORY
+#define CPUMEMORY
 
-#include "device_adapter.hpp"
+#include "device_memory.hpp"
 
 namespace IdioticML{
 
-class CPU_adapter : public DeviceAdapter{
+class CpuMemory : public DeviceMemory{
 public:
-    CPU_adapter(const Device& device);
+    CpuMemory(const Device& device);
     
     void allocate(void **ptr, size_t num_bytes, const void *src = nullptr) override;
     void deallocate(void **ptr) override;

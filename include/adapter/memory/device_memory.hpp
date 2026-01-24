@@ -1,7 +1,7 @@
-#ifndef DEVICEHANDLER
-#define DEVICEHANDLER
+#ifndef DEVICEMEMORY
+#define DEVICEMEMORY
 
-#include "memory/device.hpp"
+#include "adapter/device.hpp"
 #include <vector>
 
 #define CHUNK 8
@@ -10,15 +10,15 @@ namespace IdioticML{
 /**
  * In charge of handling operations relating to a specific device, CPU or GPU
  */
-class DeviceAdapter {
+class DeviceMemory {
 protected:
     Device device;
     
 
 
 public:
-    DeviceAdapter(const Device& device);
-    virtual ~DeviceAdapter() = default;
+    DeviceMemory(const Device& device);
+    virtual ~DeviceMemory() = default;
 
     DeviceType getDeviceType();
 

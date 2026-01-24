@@ -1,18 +1,18 @@
 
-#ifndef GPUHANDLER
-#define GPUHANDLER
+#ifndef GPUMEMORY
+#define GPUMEMORY
 
-#include "device_adapter.hpp"
+#include "device_memory.hpp"
 #include <cublas_v2.h>
 
 namespace IdioticML{
 
-class GPU_adapter : public DeviceAdapter{
+class GpuMemory : public DeviceMemory{
     cublasHandle_t handler;
     
 public:
-    GPU_adapter(const Device& device);
-    ~GPU_adapter();
+    GpuMemory(const Device& device);
+    ~GpuMemory();
 
     void allocate(void **ptr, size_t num_bytes, const void *src = nullptr) override;
     void deallocate(void **ptr) override;

@@ -1,4 +1,4 @@
-#include "memory/adapter/cpu_adapter.hpp"
+#include "adapter/memory/cpu_memory.hpp"
 #include "utils/logger.cuh"
 #include <cuda_runtime.h>
 #include <cstring>
@@ -6,13 +6,13 @@
 
 namespace IdioticML{
 
-CPU_adapter::CPU_adapter(const Device& device) : DeviceAdapter(device){
+CpuMemory::CpuMemory(const Device& device) : DeviceMemory(device){
     if (device.type != DeviceType::CPU){
         LOGEXCEPTION("CPU Adapter requires device of type CPU")
     }
 }
 
-void CPU_adapter::allocate(void **ptr, size_t num_bytes, const void *src) {
+void CpuMemory::allocate(void **ptr, size_t num_bytes, const void *src) {
     *ptr = std::malloc(num_bytes);
     if (*ptr == nullptr) {
         LOGEXCEPTION("Fail to allocate memory on RAM.")
@@ -41,13 +41,13 @@ void CPU_adapter::allocate(void **ptr, size_t num_bytes, const void *src) {
     }
 }
 
-void CPU_adapter::deallocate(void **ptr) {
+void CpuMemory::deallocate(void **ptr) {
     std::free(*ptr);
     *ptr = nullptr;
 }
 
 
-void CPU_adapter::copyTo(void *dest, const void *src, size_t num_bytes) {
+void CpuMemory::copyTo(void *dest, const void *src, size_t num_bytes) {
     cudaPointerAttributes attr;
     CUDA_ERR_CHECK(cudaPointerGetAttributes(&attr, dest));
 
@@ -78,7 +78,7 @@ inline void simultAssign(T *dest,
 {
     ((dest[i + Idx] = src[indices[i + Idx]]), ...);
 }
-void CPU_adapter::copyAtIndices(void *dest, 
+void CpuMemory::copyAtIndices(void *dest, 
                                 const void *src, 
                                 const unsigned int *indices, 
                                 unsigned int numberOfIndices,
@@ -110,14 +110,14 @@ void CPU_adapter::copyAtIndices(void *dest,
 
 
 
-bool CPU_adapter::isGPU() {return false;}
-bool CPU_adapter::isCPU() {return true;}
-int CPU_adapter::getGPU_id(){
+bool CpuMemory::isGPU() {return false;}
+bool CpuMemory::isCPU() {return true;}
+int CpuMemory::getGPU_id(){
     LOGEXCEPTION("The current device is CPU, cannot get GPU's ID")
 }
 
 
-void CPU_adapter::add(void *dest, 
+void CpuMemory::add(void *dest, 
                      const void *src1, 
                      const void *src2, 
                      unsigned int numberOfEntries, 
@@ -141,7 +141,7 @@ void CPU_adapter::add(void *dest,
 }   
 
 
-void CPU_adapter::mult(int m, int n, int k,
+void CpuMemory::mult(int m, int n, int k,
                        const void *src1,
                        const void *src2,
                        void *dest,
